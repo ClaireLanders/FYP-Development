@@ -15,7 +15,7 @@ A React Native mobile application for connecting food retailers with charities t
 
 ```bash
 git clone <repository-url>
-cd FYP-Iteration2
+cd FYP-Development-main
 ```
 
 ### 2. Set Up Python Virtual Environment

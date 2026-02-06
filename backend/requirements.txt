@@ -4,4 +4,4 @@ pydantic
 psycopg2
 qrcode[pil]==8.0
 pillow==11.1.0
-expo-camera
+
