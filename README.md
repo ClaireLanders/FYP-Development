@@ -1,4 +1,4 @@
-# WasteNot Food Rescue - FYP Iteration 3
+# WasteNot Food Rescue - FYP Iteration 4
 
 A React Native mobile application for connecting food retailers with charities to reduce food waste. Store workers can create listings of surplus food, while charity volunteers can browse and claim these items.
 
@@ -8,15 +8,6 @@ A React Native mobile application for connecting food retailers with charities t
 - `WasteNotDev/` - React Native mobile app (Expo)
 - `frontend/` - React web frontend (development/testing)
 
-## Prerequisites
-
-Before setting up the project, ensure you have the following installed:
-
-- Python 3.8 or higher
-- Node.js 18.0 or higher
-- npm or yarn
-- PostgreSQL database
-- Expo Go app on your mobile device (for testing)
 
 ## Setup Instructions
 
@@ -65,7 +56,7 @@ cd backend
 python main.py
 ```
 
-The backend API will be available at `http://localhost:8000`
+The backend API will be available at `http://localhost:8001`
 
 ### 6. Install Mobile App Dependencies
 
@@ -88,11 +79,6 @@ Update the API base URL in `WasteNotDev/services/api.ts`:
 npx expo start
 ```
 
-This will:
-- Start the Expo development server
-- Display a QR code in the terminal
-- Open Expo DevTools in your browser
-
 ### 9. Test on Your Device
 
 1. Install **Expo Go** on your mobile device:
@@ -105,68 +91,10 @@ This will:
 
 3. The app will load on your device
 
-## Optional: Web Frontend Setup
 
-To run the React web frontend for development/testing:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The web frontend will be available at `http://localhost:5173`
-
-## Project Features
-
-### Store Worker Features
-- Create daily food surplus listings
-- Edit existing listing quantities
-- Cancel listings
-
-### Charity Volunteer Features
-- Browse available food listings
-- Claim items from listings
-- View organization and branch details
-
-## Technology Stack
-
-### Backend
-- FastAPI - Python web framework
-- PostgreSQL - Relational database
-- Psycopg2 - PostgreSQL adapter for Python
-
-### Mobile App
-- React Native - Mobile framework
-- Expo - Development platform
-- TypeScript - Type-safe JavaScript
-- Axios - HTTP client
-
-### Web Frontend
-- React - UI library
-- Vite - Build tool
-- Axios - HTTP client
-
-## Troubleshooting
-
-### Backend Issues
-- **Port already in use**: Change the port in `backend/main.py`
-- **Database connection error**: Verify PostgreSQL is running and connection settings are correct
-
-### Mobile App Issues
-- **Cannot connect to API**: Ensure your device is on the same network as your development machine
-- **QR code not scanning**: Try entering the URL manually in Expo Go
-- **Metro bundler errors**: Clear the cache with `npx expo start -c`
-
-### General Issues
-- **Module not found errors**: Run `npm install` or `pip install -r requirements.txt` again
-- **Virtual environment issues**: Deactivate and reactivate the virtual environment
 
 ## Development Notes
-
-- Hard-coded user and branch IDs are used for development (see `constants/config.ts`)
-- TODO: Implement proper authentication and user context management
-- The app uses local storage on mobile devices for temporary data
+- WasteNot uses local storage on mobile devices for temporary data
 
 ## References
 
