@@ -46,7 +46,7 @@ export interface UpdateListingItemRequest {
 }
 
 export interface ClaimRequest {
-  user_id: string;
+  user_branch_id: string;
   items: Array<{
     listing_line_item_id: string;
     quantity: number;

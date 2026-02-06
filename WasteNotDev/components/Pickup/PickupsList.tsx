@@ -27,8 +27,9 @@ export const MyPickupsList: React.FC = () => {
   const [pickups, setPickups] = useState<MyPickup[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // TODO: Replace with logged in user
-  const userId = 'USER_ID';
+  // Charity user id
+  // TODO: will need to eventually change this to reflect the logged in credentials
+  const UserBranchId = '546c6ef4-ef5d-4582-b1c6-6977a42d1ce1';
 
   useEffect(() => {
     loadPickups();

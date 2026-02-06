@@ -6,9 +6,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { QRCodeDisplay } from '@/components/Pickup/QRCodeDisplay';
 
 export default function PickupQRScreen() {
-  const { claimId, userId } = useLocalSearchParams<{
+  const { claimId, UserBranchId } = useLocalSearchParams<{
     claimId: string;
-    userId: string;
+    UserBranchId: string;
   }>();
   const router = useRouter();
 
@@ -16,7 +16,7 @@ export default function PickupQRScreen() {
     <View style={styles.container}>
       <QRCodeDisplay
         claimId={claimId || ''}
-        userId={userId || ''}
+        UserBranchId={UserBranchId || ''}
         onBack={() => router.back()}
       />
     </View>

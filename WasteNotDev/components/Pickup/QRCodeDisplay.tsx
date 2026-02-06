@@ -14,16 +14,16 @@ import { ClaimStatusBadge } from './ClaimStatusBadge';
 
 interface QRCodeDisplayProps {
   claimId: string;
-  userId: string;
+  UserBranchId: string;
   onBack?: () => void;
 }
 
 export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   claimId,
-  userId,
+  UserBranchId,
   onBack,
 }) => {
-  const { qrData, loading, error, refresh } = usePickupQR(claimId, userId);
+  const { qrData, loading, error, refresh } = usePickupQR(claimId, UserBranchId);
 
   if (loading) {
     return (
