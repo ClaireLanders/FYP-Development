@@ -1,17 +1,42 @@
 // Scanner Tab - QR Code Verification for Pickups
 // Minimal code - just displays the scanner component
 
-import React from 'react';
+import {React, useState} from 'react';
 import { View, StyleSheet } from 'react-native';
 import { QRCodeScanner } from '../../components/Pickup/QRCodeScanner';
+import { VerificationResult} from '../../components/Pickup/VerificationResult';
+import {VerifyPickupResponse} from '../../services/pickupService';
 
-// TODO: Replace with actual user_branch_id from auth context
+
 const USER_BRANCH_ID = '0ca58dd2-df98-42ee-b0a4-f6b43c00a3d8'; // Tesco Express
 
 export default function ScannerScreen() {
+  const [verificationResult, setVerificationResult] = useState<VerifyPickupResponse | null>(null);
+
+  const handleVerified = (result: VerifyPickupResponse) => {
+    setVerificationResult(result);
+  };
+
+  const handleDone = () => {
+    setVerificationResult(null);
+  };
+
+  if (verificationResult){
   return (
     <View style={styles.container}>
-      <QRCodeScanner userBranchId={'0ca58dd2-df98-42ee-b0a4-f6b43c00a3d8'} />
+      <VerificationResult result={verificationResult} onDone={handleDone} />
+    </View>
+  );
+}
+
+
+return (
+    <View style={styles.container}>
+      <QRCodeScanner
+        userBranchId={USER_BRANCH_ID}
+        onVerified={handleVerified}
+        onCancel={handleDone}
+      />
     </View>
   );
 }
@@ -19,6 +44,6 @@ export default function ScannerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#000',
   },
 });

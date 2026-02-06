@@ -65,7 +65,7 @@ export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
   if (!permission) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="4CAF50"/>
+        <ActivityIndicator size="large" color="#4CAF50"/>
       </View>
     );
   }
@@ -73,7 +73,7 @@ export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
   if (!permission.granted) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="4CAF50"/>
+        <ActivityIndicator size="large" color="#4CAF50"/>
       </View>
     );
   }
@@ -87,13 +87,12 @@ export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
         barcodeScannerSettings={{
           barcodeTypes: ['qr'],
         }}
-      >
-            {verifying && (
-              <View style={styles.verifyingOverlay}>
-                <ActivityIndicator size="large" color="fffff" />
-              </View>
-            )}
-      </CameraView>
+      />
+      {verifying && (
+        <View style={styles.verifyingOverlay}>
+          <ActivityIndicator size="large" color="#ffff" />
+        </View>
+      )}
     </View>
   );
 };
