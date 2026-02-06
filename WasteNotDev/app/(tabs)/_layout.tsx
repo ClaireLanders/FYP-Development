@@ -54,6 +54,14 @@ export default function TabLayout() {
               tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📦</Text>,
           }}
       />
+      <Tabs.Screen
+          name="qr-scanner"
+          options={{
+              title: 'QR Scanner',
+              tabBarIcon: ({color, focused}) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right"
+                                                            color={color} />
+          }}
+      />
     </Tabs>
   );
 }

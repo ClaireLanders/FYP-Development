@@ -2,7 +2,7 @@
 // Defines TypeScript interfaces for:
 // - Product: Basic product information
 // - ListingLineItem: Individual items in a listing
-// - Listing: Complete listing with organization and branch info
+// - Listing: Complete listing with organisation and branch info
 // - CreateListingRequest: Payload for creating listings
 // - UpdateListingItemRequest: Payload for updating quantities
 // - ClaimRequest: Payload for claiming items

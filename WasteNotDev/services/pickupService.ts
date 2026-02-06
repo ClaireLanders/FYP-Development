@@ -33,6 +33,23 @@ export interface MyPickup {
   approved_at: string | null;
 }
 
+export interface VerifyPickupRequest {
+  qr_code: string;
+  user_branch_id: string;
+}
+
+export interface VerifyPickupResponse{
+  pickup_id: string;
+  claim_id: string;
+  success: boolean;
+  message: string;
+  charity_name: string;
+  items: Array<{
+    product_name: string;
+    quantity: number;
+  }>;
+}
+
 export const pickupService = {
   getPickupQR: async (claimId: string, UserBranchId: string): Promise<PickupQRData> => {
     const response = await api.get(`/pickup/qr/${claimId}`, {
@@ -46,5 +63,12 @@ export const pickupService = {
       params: { branch_id: branchId }
     });
     return response.data;
+  },
+  verifyPickup: async (qr_code: string, user_branch_id: string):Promise<VerifyPickupResponse> => {
+    const response= await api.post('/pickup/verify', {
+      qr_code,user_branch_id,
+    });
+    return response.data;
   }
 };
+
