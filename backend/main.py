@@ -46,10 +46,7 @@ connection_pool = psycopg2.pool.ThreadedConnectionPool(
     port = 5432
 
 )
-# print statement for testing
-# TODO: REVMOVE !!
-if connection_pool:
-    print("connection pool created successfully")
+
 
 
 # Updated get_conn function for the pool
@@ -66,7 +63,7 @@ def get_conn():
 # from video "PostgreSQL in Python - Crash Course" (NeuralNine, 2023)
 # database connection
 # commentign out for the moment while working on the connection pool
-# TODO - remove?
+#
 # def get_conn():
 #     conn = psycopg2.connect(
 #         host="localhost",
@@ -165,7 +162,6 @@ class CancelListingOutput(BaseModel):
 
 
 # User Story 5
-# TODO: ADD SOURCES AND REFERENCES
 # Claim Approval Models
 class ClaimItemDetail(BaseModel):
     # Details of a single item in a claim
@@ -549,7 +545,6 @@ def create_claim(payload: Claim, conn=Depends(get_conn)):
     return ClaimOutput(claim_id=str(claim_id))
 
 # User story 5
-# TODO: ADD SOURCE AND REFERENCE !!
 # Claims pending approval
 @app.get("/claims/pending", response_model=List[PendingClaimDetail])
 def get_pending_claims(
@@ -749,7 +744,6 @@ def get_pickup_qr(
         if not claim:
             raise HTTPException(404, "Claim not found")
         # claim not approved
-        # TODO source for the errors
         if not claim[1]:
             raise HTTPException(400, "Claim not approved yet")
 
@@ -1111,12 +1105,11 @@ def root():
     return {"status": "ok", "docs": "/docs"}
 
 # Shutdown event to close connection pool (Chowdhury, 2025)
-# TODO: remove print staemtn
 @app.on_event("shutdown")
 def shutdown_event():
     if connection_pool:
         connection_pool.closeall()
-        print("Connection pool closed")
+
 
 
 if __name__ == "__main__":

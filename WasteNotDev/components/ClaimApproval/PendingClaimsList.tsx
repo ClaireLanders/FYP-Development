@@ -2,11 +2,10 @@
 // Displays two sections: Pending Claims (for approval) and Awaiting Pickup (approved claims)
 // Handles claim approval workflow and refresh functionality
 // Shows appropriate loading, error, and empty states for each section
-// TODO: References
-// TODO: GET RID OF UNNECESSARY STYLING
+
 
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { usePendingClaims } from '@/hooks/usePendingClaims';
 import { PendingClaimCard } from './PendingClaimCard';
 import { ApprovedClaimCard } from './ApprovedClaimCard';
@@ -125,7 +124,7 @@ export const PendingClaimsList: React.FC = () => {
     </ScrollView>
   );
 };
-
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

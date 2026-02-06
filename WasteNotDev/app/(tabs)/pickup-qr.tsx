@@ -1,4 +1,4 @@
-// TODO: ADD DESCRIPTION AND SOURCES
+
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
@@ -23,6 +23,7 @@ export default function PickupQRScreen() {
   );
 }
 
+//(ReactNative, 2026)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

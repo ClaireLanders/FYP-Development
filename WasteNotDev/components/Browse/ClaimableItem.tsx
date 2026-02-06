@@ -3,6 +3,7 @@
 // Validates that claimed quantity doesn't exceed available quantity
 // Used within the ListingBrowser to display individual line items
 // This is adapted for React Native from my own code in frontend/src/components/Browse.jsx
+// (ReactNative, 2026)
 
 import React, { useState } from 'react';
 import { View, TextInput, StyleSheet } from 'react-native';
@@ -29,7 +30,7 @@ export const ClaimableItem: React.FC<ClaimableItemProps> = ({
       onClaimQuantityChange(0);
     }
   };
-
+// (ReactNative, 2026)
   return (
     <ThemedView style={styles.container}>
       <View style={styles.itemInfo}>
@@ -48,6 +49,7 @@ export const ClaimableItem: React.FC<ClaimableItemProps> = ({
   );
 };
 
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',

@@ -13,7 +13,7 @@ import { ThemedText } from '@/components/themed-text';
 import { EditableLineItem } from './EditableLineItem';
 import { useListingManagement } from '../../hooks/useListingManagement';
 
-// TODO: Replace with actual user context
+
 const BRANCH_ID = '03a897a0-e271-4174-aed2-d283a888dbae';
 const USER_BRANCH_ID = '0ca58dd2-df98-42ee-b0a4-f6b43c00a3d8';
 
@@ -108,7 +108,7 @@ export const ListingEditor = () => {
     </ThemedView>
   );
 };
-
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

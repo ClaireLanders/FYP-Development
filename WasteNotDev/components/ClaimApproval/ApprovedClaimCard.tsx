@@ -60,6 +60,7 @@ export const ApprovedClaimCard: React.FC<ApprovedClaimCardProps> = ({ claimGroup
   );
 };
 
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',

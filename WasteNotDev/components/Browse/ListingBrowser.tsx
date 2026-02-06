@@ -4,6 +4,7 @@
 // Manages claim state and communicates with the backend via claimService
 // Displays loading states and handles errors appropriately
 // This is adapted for React Native from my own code in frontend/src/components/Browse.jsx
+// (ReactNative, 2026)
 
 import React, { useState } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, View, RefreshControl} from 'react-native';
@@ -138,7 +139,7 @@ export const ListingBrowser = () => {
     </ThemedView>
   );
 };
-
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

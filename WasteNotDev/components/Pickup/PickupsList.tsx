@@ -1,5 +1,4 @@
-// TODO DESCRIPTION AND SOURCES
-// TODO CHANGE STYLING AND COMMENTS
+
 
 
 import React, { useState, useEffect } from 'react';
@@ -134,7 +133,7 @@ export const MyPickupsList: React.FC = () => {
     </View>
   );
 };
-
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

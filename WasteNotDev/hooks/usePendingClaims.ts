@@ -2,7 +2,7 @@
 // Fetches pending claims for approval and approved claims waiting for pickup
 // Provides functions to approve claims and refresh data
 // Manages loading states and error handling
-// TODO: add sources?
+
 
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';

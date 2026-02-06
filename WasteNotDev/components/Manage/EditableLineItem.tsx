@@ -76,7 +76,7 @@ export const EditableLineItem: React.FC<EditableLineItemProps> = ({ item, listin
     </ThemedView>
   );
 };
-
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',

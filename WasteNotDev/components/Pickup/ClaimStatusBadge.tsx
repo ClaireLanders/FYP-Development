@@ -1,5 +1,3 @@
-// TODO: ADD DESCRIPTION AND SOURCES
-// TODO: GET RID OF UNNESSESARY COMMENTS
 // Adapted from (MaterialUI, 2026)
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
@@ -35,7 +33,7 @@ export const ClaimStatusBadge: React.FC<ClaimStatusBadgeProps> = ({
     </View>
   );
 };
-
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 16,

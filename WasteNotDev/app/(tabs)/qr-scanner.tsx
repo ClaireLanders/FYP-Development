@@ -1,7 +1,5 @@
-// Scanner Tab - QR Code Verification for Pickups
-// Minimal code - just displays the scanner component
-
-import {React, useState} from 'react';
+// QR Code Verification for Pickups
+import {useState} from 'react';
 import { View, StyleSheet } from 'react-native';
 import { QRCodeScanner } from '../../components/Pickup/QRCodeScanner';
 import { VerificationResult} from '../../components/Pickup/VerificationResult';

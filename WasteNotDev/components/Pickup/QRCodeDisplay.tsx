@@ -1,4 +1,4 @@
-// TODO: ADD DESCRIPTION AND SOURCES
+
 import React from 'react';
 import {
   View,
@@ -37,7 +37,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   if (error) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorIcon}>⚠️</Text>
+        <Text style={styles.errorIcon}></Text>
         <Text style={styles.errorMessage}>{error}</Text>
         {error.includes('not approved') && (
           <Text style={styles.errorHint}>
@@ -97,7 +97,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
 
       {/* Pickup Location */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📍 Pickup Location</Text>
+        <Text style={styles.sectionTitle}>Pickup Location</Text>
         <View style={styles.card}>
           <Text style={styles.storeName}>{qrData.store_info.org_name}</Text>
           <Text style={styles.branchName}>{qrData.store_info.branch_name}</Text>
@@ -155,7 +155,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     </ScrollView>
   );
 };
-
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

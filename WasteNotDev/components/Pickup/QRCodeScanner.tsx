@@ -1,11 +1,10 @@
-// TODO: ADD DESCRIPTION AND SOURCES
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { pickupService, VerifyPickupResponse } from '@/services/pickupService';
 
-// TODO: add source
+
 interface QRCodeScannerProps {
   userBranchId: string;
   onVerified: (result: VerifyPickupResponse) => void;
@@ -96,7 +95,7 @@ export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
     </View>
   );
 };
-
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

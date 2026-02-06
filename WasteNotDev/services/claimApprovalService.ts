@@ -1,7 +1,7 @@
 // Service for claim approval opperations
 // This file fetches pending claims, approving claims, and fetching approved claims awaiting pickup
 // This service communicates with the backend claim approval endpoints
-// TODO: References
+
 import {api} from './api';
 
 export interface ClaimItemDetail {

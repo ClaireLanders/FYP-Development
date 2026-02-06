@@ -1,5 +1,3 @@
-// TODO: ADD DESCRIPTION AND SOURCES
-// TODO: Comments fix !!
 // Manages QR state and logic
 import { useState } from 'react';
 import { pickupService, VerifyPickupResponse } from '../services/pickupService';

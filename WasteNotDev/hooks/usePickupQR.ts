@@ -1,4 +1,4 @@
-// TODO: Description and sources
+
 
 import { useState, useEffect, useCallback } from 'react';
 import { pickupService, PickupQRData } from '@/services/pickupService';

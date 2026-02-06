@@ -1,4 +1,4 @@
-//TODO: ADD DESCRIPTION AND SOURCES
+
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { VerifyPickupResponse } from '@/services/pickupService';
@@ -34,7 +34,7 @@ export const VerificationResult: React.FC<VerificationResultProps> = ({
       {/* Items */}
       <View style={styles.itemsSection}>
         <Text style={styles.sectionTitle}>
-          📦 Items to Release ({totalItems})
+          Items to Release ({totalItems})
         </Text>
         <View style={styles.itemsCard}>
           {result.items.map((item, index) => (

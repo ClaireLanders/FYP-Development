@@ -51,7 +51,7 @@ export default function TabLayout() {
           name="pickups"
           options={{
               title: 'Pickups',
-              tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📦</Text>,
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />,
           }}
       />
       <Tabs.Screen
