@@ -12,6 +12,7 @@ from typing import List, Optional
 import psycopg2  # Postgres Driver
 from psycopg2 import pool
 from utils.qr_code import generate_qr_code, generate_secure_token
+from datetime import datetime, date
 
 # Setting up FastAPI
 app = FastAPI()
@@ -995,7 +996,114 @@ def verify_pickup(payload: VerifyPickupRequest, conn=Depends(get_conn)):
                 items=items
             )
 
+# Getting all approved claims awaiting pickup for a store's branch.
+# Only includes listings created today, showing quantity claimed vs quantity listed with remaining quantities.
+# Add this endpoint to backend/main.py
+# This endpoint gets approved claims awaiting pickup for a store's branch
+# Grouped by charity, only today's listings, showing claimed/listed/remaining quantities
 
+@app.get("/claims/approved-awaiting-pickup")
+def get_approved_awaiting_pickup(
+        branch_id: str = Query(..., description="Branch ID to get approved claims for"),conn=Depends(get_conn)):
+    with conn, conn.cursor() as cur:
+
+        # Query to get approved claims awaiting pickup grouped by charity
+        cur.execute(
+            """
+            SELECT 
+                c.claim_id,
+                c.created_at as claim_created_at,
+                c.approved_at,
+                org.org_name as charity_org_name,
+                b.branch_name as charity_branch_name,
+                ub.user_branch_id as charity_user_branch_id,
+                prod.product_name,
+                lci.quantity as quantity_claimed,
+                lli.quantity as quantity_remaining
+            FROM claim c
+            JOIN pickup p ON c.claim_id = p.claim_id
+            JOIN listing_claim_item lci ON c.claim_id = lci.claim_id
+            JOIN listing_line_item lli ON lci.listing_line_item_id = lli.listing_line_item_id
+            JOIN listing l ON lli.listing_id = l.listing_id
+            JOIN product prod ON lli.product_id = prod.product_id
+            -- Getting charity info
+            JOIN user_branch ub ON c.user_branch_id = ub.user_branch_id
+            JOIN branch b ON ub.branch_id = b.branch_id
+            JOIN organisation org ON b.org_id = org.org_id
+            -- Getting store's branch via listing's user_branch
+            JOIN user_branch ub_store ON l.user_branch_id = ub_store.user_branch_id
+            WHERE ub_store.branch_id = %s
+            AND c.approved = TRUE
+            AND p.complete = FALSE
+            AND DATE(p.created_at)= CURRENT_DATE
+            ORDER BY org.org_name, c.created_at, prod.product_name
+            """,
+            (branch_id,))
+
+
+        rows = cur.fetchall()
+
+        if not rows:
+            return []
+
+        # Group results by charity
+        charity_groups = {}
+
+        for row in rows:
+            claim_id = row[0]
+            claim_created_at = row[1]
+            approved_at = row[2]
+            charity_org_name = row[3]
+            charity_branch_name = row[4]
+            charity_user_branch_id = row[5]
+            product_name = row[6]
+            quantity_claimed = row[7]
+            quantity_remaining = row[8]
+
+            # Create charity group key
+            charity_key = charity_user_branch_id
+
+            # Initialize charity group if not exists
+            if charity_key not in charity_groups:
+                charity_groups[charity_key] = {
+                    "charity_org_name": charity_org_name,
+                    "charity_branch_name": charity_branch_name,
+                    "charity_user_branch_id": charity_user_branch_id,
+                    "claims": {}
+                }
+
+            # Initialize claim if not exists
+            if claim_id not in charity_groups[charity_key]["claims"]:
+                charity_groups[charity_key]["claims"][claim_id] = {
+                    "claim_id": claim_id,
+                    "claim_created_at": claim_created_at.isoformat(),
+                    "approved_at": approved_at.isoformat(),
+                    "items": []
+                }
+
+            # Add item to claim
+            charity_groups[charity_key]["claims"][claim_id]["items"].append({
+                "product_name": product_name,
+                "quantity_claimed": quantity_claimed,
+                "quantity_remaining": quantity_remaining
+            })
+
+        # Convert to final response format
+        response = []
+        for charity_key, charity_data in charity_groups.items():
+            claims_list = list(charity_data["claims"].values())
+            total_items = sum(len(claim["items"]) for claim in claims_list)
+
+            response.append({
+                "charity_org_name": charity_data["charity_org_name"],
+                "charity_branch_name": charity_data["charity_branch_name"],
+                "charity_user_branch_id": charity_data["charity_user_branch_id"],
+                "total_claims": len(claims_list),
+                "total_items": total_items,
+                "claims": claims_list
+            })
+
+        return response
 # Testing suggested by ChatGPT (ChatGPT, 2025)
 # for web frontend
 @app.get("/", tags=["meta"])
