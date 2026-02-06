@@ -2,8 +2,7 @@
 # This code is adapted from video "how to create a Fast APi & React Project" (Tech With Tim, 2024)
 # The database interactions for this code were adapted from (NeuralNine, 2025)
 # My own database and models were used, the video acted as a guide to understand the imports, models and endpoints
-# TEST - Commit
-# TEST again - will this let me commit?
+
 
 import uvicorn
 from fastapi import FastAPI, Depends, HTTPException, Query
@@ -130,7 +129,7 @@ class ClaimItem(BaseModel):
 
 
 class Claim(BaseModel):
-    user_id: str  # charity user making the claim
+    user_branch_id: str  # charity user making the claim
     items: List[ClaimItem]
 
 
@@ -473,11 +472,11 @@ def create_claim(payload: Claim, conn=Depends(get_conn)):
             # Creating the claim, generating a unique id
             cur.execute(
                 """
-                INSERT INTO claim (user_id)
+                INSERT INTO claim (user_branch_id)
                 VALUES (%s)
                 RETURNING claim_id
                 """,
-                (payload.user_id,),  # trailing comma (single-argument tuple)
+                (payload.user_branch_id,),
             )
             claim_id = cur.fetchone()[0]
 
@@ -549,14 +548,15 @@ def get_pending_claims(
         cur.execute("""
             SELECT DISTINCT
                 c.claim_id,
-                c.user_id,
+                ub_charity.user_id,
                 c.created_at,
                 c.approved,
                 au.user_email,
                 o.org_name
             FROM claim c
-            JOIN app_user au ON au.user_id = c.user_id
-            JOIN user_branch ub_charity ON ub_charity.user_id = au.user_id
+            -- Getting charity user info via user_brandh_id:
+            JOIN user_branch ub_charity ON ub_charity.user_branch_id = c.user_branch_id
+            JOIN app_user au ON au.user_id = ub_charity.user_id
             JOIN organisation o ON o.org_id = ub_charity.org_id
             -- Getting claims for listings from this branch
             JOIN listing_claim_item lci ON lci.claim_id = c.claim_id
@@ -630,8 +630,9 @@ def approve_claim(payload: ApproveClaimRequest, conn=Depends(get_conn)):
             # Verify the claim exists
             cur.execute(
                 """
-                SELECT c.claim_id, c.approved, c.user_id
+                SELECT c.claim_id, c.approved, ub.user_id
                 FROM claim c
+                JOIN user_branch ub on ub.user_branch_id = c.user_branch_id
                 WHERE c.claim_id = %s
                 FOR UPDATE
                 """,
@@ -714,19 +715,19 @@ def approve_claim(payload: ApproveClaimRequest, conn=Depends(get_conn)):
 @app.get("/pickup/qr/{claim_id}")
 def get_pickup_qr(
         claim_id: str,
-        user_id:str = Query(..., description="User ID of charity that made the claim"),
+        user_branch_id:str = Query(..., description="User branch ID of charity that made the claim"),
         conn=Depends(get_conn)
 ):
     # getting the QR code for the specific claim
     with conn, conn.cursor() as cur:
-        # Verifying the claim belongs to this user
+        # Verifying the claim belongs to this user branch
         cur.execute(
             """
             SELECT claim_id, approved
             FROM claim
-            WHERE claim_id = %s AND user_id = %s
+            WHERE claim_id = %s AND user_branch_id = %s
             """,
-            (claim_id, user_id)
+            (claim_id, user_branch_id)
         )
 
         claim = cur.fetchone()
@@ -809,7 +810,7 @@ def get_pickup_qr(
 # Getting all approved claims for a charity user, showing pickups ready for collection.
 @app.get("/pickups/my-pickups", response_model=List[PickupDetail])
 def get_my_pickups(
-        branch _id: str = Query(..., description="Branch ID of charity to get pickups for"),
+        branch_id: str = Query(..., description="Branch ID of charity to get pickups for"),
         conn=Depends(get_conn)
 ):
     with conn, conn.cursor() as cur:
@@ -818,21 +819,22 @@ def get_my_pickups(
                 c.claim_id,
                 c.approved,
                 COALESCE(p.complete, FALSE) as complete,
-                o.org_name,
-                b.branch_name,
-                b.branch_location,
+                store_o.org_name,
+                store_b.branch_name,
+                store_b.branch_location,
                 c.approved_at
             FROM claim c
             LEFT JOIN pickup p ON p.claim_id = c.claim_id
             -- Getting the charity user's branch :
-            JOIN app_user au ON au.user_id = c.user_id
+            JOIN user_branch ub_charity ON ub_charity.user_branch_id = c.user_branch_id
+            -- Getting store branch details from listing
             JOIN listing_claim_item lci ON lci.claim_id = c.claim_id
             JOIN listing_line_item lli ON lli.listing_line_item_id = lci.listing_line_item_id
             JOIN listing l ON l.listing_id = lli.listing_id
-            JOIN user_branch ub ON ub.user_branch_id = l.user_branch_id
-            JOIN branch b ON b.branch_id = ub.branch_id
-            JOIN organisation o ON o.org_id = b.org_id
-            WHERE c.user_id = %s
+            JOIN user_branch ub_store ON ub_store.user_branch_id = l.user_branch_id
+            JOIN branch store_b ON store_b.branch_id = ub_store.branch_id
+            JOIN organisation store_o ON store_o.org_id = ub_store.org_id
+            WHERE ub_charity.branch_id = %s
             AND c.approved = TRUE
             ORDER BY c.approved_at DESC
         """, (branch_id,))
