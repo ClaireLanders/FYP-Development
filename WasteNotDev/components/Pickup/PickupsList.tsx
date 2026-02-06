@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { pickupService} from "@/services/pickupService";
 
 interface MyPickup {
   claim_id: string;
@@ -30,15 +31,26 @@ export const MyPickupsList: React.FC = () => {
   // Charity user id
   // TODO: will need to eventually change this to reflect the logged in credentials
   const UserBranchId = '546c6ef4-ef5d-4582-b1c6-6977a42d1ce1';
+  const BranchId = '03deedb7-9515-44b3-a5fb-c5ad9a2708ef'
 
   useEffect(() => {
     loadPickups();
   }, []);
 
+  // Loading the pickups for the user
   const loadPickups = async () => {
-    // TODO: Create an endpoint to fetch user's claims
-    // For now, placeholder
-    setLoading(false);
+    try{
+      setLoading(true);
+      // the branch id
+      const data = await pickupService.getMyPickups(BranchId);
+      setPickups(data);
+    }
+    catch (error) {
+      console.error('Error loading pickups:', error);
+    }
+    finally {
+      setLoading(false);
+    }
   };
 
   const handleViewQR = (claimId: string) => {
@@ -46,7 +58,7 @@ export const MyPickupsList: React.FC = () => {
       pathname: '/pickup-qr',
       params: {
         claimId: claimId,
-        userId: userId,
+        UserBranchId: UserBranchId,
       }
     });
   };

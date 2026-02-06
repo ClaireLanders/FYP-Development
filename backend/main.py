@@ -209,6 +209,20 @@ class PickupDetail(BaseModel):
     approved_at: Optional[str] = None
 
 
+# Request to verify a pickup using a QR code
+class VerifyPickupRequest(BaseModel):
+    qr_code: str
+    user_branch_id: str  # Store worker's branch
+
+# Response after verifying the pickup
+class VerifyPickupResponse(BaseModel):
+    pickup_id: str
+    claim_id: str
+    success: bool
+    message: str
+    charity_name: Optional[str] = None
+    items: List[dict]
+
 
 
 # -----------------------------------------------
@@ -523,7 +537,7 @@ def create_claim(payload: Claim, conn=Depends(get_conn)):
                 )
 
 
-                # Adding the values per item in listing_claim_item table
+                # Adding the values per item in listing claim table
                 cur.execute(
                     """
                     INSERT INTO listing_claim_item (claim_id, listing_line_item_id, quantity)
@@ -877,6 +891,111 @@ def get_my_pickups(
 
         return result
 
+
+# Verify a pickup by scanning QR code done by the store worker when a charity volunteer shows QR code
+@app.post("/pickup/verify", response_model=VerifyPickupResponse)
+def verify_pickup(payload: VerifyPickupRequest, conn=Depends(get_conn)):
+    with conn:
+        with conn.cursor() as cur:
+            # Find pickup by QR code
+            cur.execute(
+                """
+                SELECT p.pickup_id, p.claim_id, p.complete, c.user_branch_id
+                FROM pickup p
+                JOIN claim c ON c.claim_id = p.claim_id
+                WHERE p.qr_code = %s
+                FOR UPDATE
+                """,
+                (payload.qr_code,)
+            )
+
+            pickup_row = cur.fetchone()
+
+            if not pickup_row:
+                raise HTTPException(404, "Invalid QR code")
+
+            pickup_id, claim_id, complete, charity_user_branch_id = pickup_row
+
+            if complete:
+                raise HTTPException(400, "This pickup has already been completed")
+
+            # Get items and verify branch
+            cur.execute(
+                """
+                SELECT 
+                    lci.listing_claim_item_id, 
+                    lci.quantity,
+                    lli.listing_id,
+                    lli.product_id,
+                    p.product_name,
+                    l.user_branch_id 
+                FROM listing_claim_item lci
+                JOIN listing_line_item lli ON lli.listing_line_item_id = lci.listing_line_item_id
+                JOIN listing l ON l.listing_id = lli.listing_id
+                JOIN product p ON p.product_id = lli.product_id
+                WHERE lci.claim_id = %s
+                """,
+                (claim_id,)
+            )
+
+            items_rows = cur.fetchall()
+
+            if not items_rows:
+                raise HTTPException(404, "No items found for this claim")
+
+            # Verifying store worker's branch matches
+            listing_user_branch_id = items_rows[0][5] # gets the 5th position from the select statement (l.user_branch_id)
+
+            if str(listing_user_branch_id) != payload.user_branch_id:
+                raise HTTPException(
+                    403,
+                    "This pickup is for a different branch"
+                )
+
+            # Getting charity organisation name
+            cur.execute(
+                """
+                SELECT o.org_name, b.branch_name
+                FROM user_branch ub
+                JOIN organisation o ON o.org_id = ub.org_id
+                JOIN branch b ON b.branch_id = ub.branch_id
+                WHERE ub.user_branch_id = %s
+                """,
+                (charity_user_branch_id,)
+            )
+
+            charity_row = cur.fetchone()
+            charity_name = f"{charity_row[0]} - {charity_row[1]}" if charity_row else "Unknown"
+
+            # Mark pickup as complete
+            cur.execute(
+                """
+                UPDATE pickup
+                SET complete = TRUE
+                WHERE pickup_id = %s
+                """,
+                (pickup_id,)
+            )
+
+            # Format items for response
+            items = [
+                {
+                    "product_name": row[4],
+                    "quantity": int(row[1])
+                }
+                for row in items_rows
+            ]
+
+            return VerifyPickupResponse(
+                pickup_id=str(pickup_id),
+                claim_id=str(claim_id),
+                success=True,
+                message=f"Pickup verified! Please give {charity_name} their items.",
+                charity_name=charity_name,
+                items=items
+            )
+
+
 # Testing suggested by ChatGPT (ChatGPT, 2025)
 # for web frontend
 @app.get("/", tags=["meta"])
@@ -893,7 +1012,7 @@ def shutdown_event():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)
 
 # REFERENCES
 # ChatGPT. (2025, November 7). Retrieved from chatgpt.com: https://chatgpt.com/c/69176485-1458-8331-b053-4df0abe35697

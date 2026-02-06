@@ -34,10 +34,14 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
+          "dark": {"backgroundColor": "#000000"}
         }
+      ],
+      [
+      "expo-camera",
+      {
+        "cameraPermission": "Allow WasteNot to access your camera to scan pickup QR code ?"
+      }
       ]
     ],
     "experiments": {

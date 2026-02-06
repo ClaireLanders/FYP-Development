@@ -26,7 +26,7 @@ export const usePickupQR = (claimId: string, UserBranchId: string) => {
     } finally {
       setLoading(false);
     }
-  }, [claimId, userId]);
+  }, [claimId, UserBranchId]);
 
   useEffect(() => {
     loadQR();
