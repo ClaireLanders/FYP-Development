@@ -19,6 +19,10 @@ export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  // Fix for expo-camera multiple callback firing issue
+  // useRef provides synchronous updates (NashTech, 2024)
+  // setting to false intitially, then to true to prevent duplicate api calls
+  const processingRef = React.useRef(false);
 
   useEffect(() => {
     if (!permission?.granted) {
@@ -26,11 +30,24 @@ export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
     }
   }, []);
 
-  const handleBarCodeScanned = async ({ data }: { data: string }) => {
-    if (scanned || verifying) return;
 
-    setScanned(true);
-    setVerifying(true);
+    useEffect(() => {
+    // Resetting the processing flag when the component unmounts
+    // Cleanup function to ensure the ref is reset for the next mount
+    return () => {
+      processingRef.current = false;
+    };
+  }, []);
+
+  const handleBarCodeScanned = async ({ data }: { data: string }) => {
+    // Check to prevent rapid-fire scanning
+    if (scanned || verifying || processingRef.current){
+      return;
+    }
+    // Setting the ref immediately to block subsequent scans
+    processingRef.current = true; // Synchronous block, checking it first as it updates immediately
+    setScanned(true); // Asynchronous state update
+    setVerifying(true); // Asynchronous state update
 
     try {
       const result = await pickupService.verifyPickup(data, userBranchId);
@@ -39,6 +56,9 @@ export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
 
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || 'Failed to verify pickup';
+
+      // Resetting the processing flag on error so user can try again
+      processingRef.current = false;
 
       Alert.alert(
         'Verification Failed',

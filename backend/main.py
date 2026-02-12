@@ -1029,7 +1029,7 @@ def get_approved_awaiting_pickup(
             WHERE ub_store.branch_id = %s
             AND c.approved = TRUE
             AND p.complete = FALSE
-            AND DATE(p.created_at)= CURRENT_DATE
+            AND DATE(c.created_at)= CURRENT_DATE
             ORDER BY org.org_name, c.created_at, prod.product_name
             """,
             (branch_id,))
