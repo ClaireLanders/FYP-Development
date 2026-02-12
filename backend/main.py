@@ -12,7 +12,7 @@ from typing import List, Optional
 import psycopg2  # Postgres Driver
 from psycopg2 import pool
 from utils.qr_code import generate_qr_code, generate_secure_token
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 # Setting up FastAPI
 app = FastAPI()
@@ -1034,7 +1034,6 @@ def get_approved_awaiting_pickup(
             """,
             (branch_id,))
 
-
         rows = cur.fetchall()
 
         if not rows:
@@ -1098,6 +1097,85 @@ def get_approved_awaiting_pickup(
             })
 
         return response
+
+# User story 7
+# Getting the basic waste tracking metric for a shop
+# Returns the total items listed + rescued, the rescue rate, no.of listings, no. of complete pickups
+@app.get("/analytics/basic-metrics")
+def get_basic_metrics(branch_id: str, days: int = 30, conn=Depends(get_conn)):
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=days)
+    with conn, conn.cursor() as cur:
+        # Total items listed
+        cur.execute(
+            """
+            SELECT
+            COUNT(DISTINCT l.listing_id) AS listings_count,
+            COALESCE(SUM(lli.quantity), 0) AS total_items_listed
+            FROM listing l 
+            JOIN listing_line_item lli ON l.listing_id = lli.listing_id
+            JOIN user_branch ub ON l.user_branch_id = ub.user_branch_id
+            WHERE ub.branch_id = %s
+            AND l.created_at >= %s
+            AND l.created_at <= %s
+            """,
+            (branch_id, start_date, end_date)
+        )
+
+        listed_result = cur.fetchone()
+        listings_count = listed_result[0] if listed_result else 0
+        total_items_listed = listed_result[1] if listed_result else 0
+
+        # Total Items Rescued
+        cur.execute(
+            """
+            SELECT
+            COUNT(DISTINCT p.pickup_id) as pickups_count, 
+            COALESCE(SUM(lli.quantity), 0) as total_items_rescued
+            FROM pickup p
+            JOIN claim c ON p.claim_id = c.claim_id
+            JOIN listing_claim_item lci ON c.claim_id = lci.claim_id
+            JOIN listing_line_item lli ON lci.listing_line_item_id = lli.listing_line_item_id
+            JOIN listing l ON lli.listing_id = l.listing_id
+            JOIN user_branch ub ON l.user_branch_id = ub.user_branch_id
+            WHERE ub.branch_id = %s
+            AND complete = TRUE
+            AND p.completed_at >= %s
+            AND p.completed_at <= %s
+            """,
+            (branch_id, start_date, end_date)
+        )
+        rescued_result = cur.fetchone()
+        pickups_completed = rescued_result[0] if rescued_result else 0
+        total_items_rescued = rescued_result[1] if rescued_result else 0
+
+        # Calculating Rescue Rate
+        if total_items_listed > 0:
+            rescue_rate = (total_items_rescued/total_items_listed) * 100
+        else:
+            rescue_rate = 0
+
+        return{
+            "period":{
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "days": days
+            },
+            "listings_count": listings_count,
+            "total_items_listed": int(total_items_listed),
+            "pickups_completed": pickups_completed,
+            "total_items_rescued": int(total_items_rescued),
+            "rescue_rate": round(rescue_rate, 2)
+        }
+
+
+
+
+
+
+
+
+
 # Testing suggested by ChatGPT (ChatGPT, 2025)
 # for web frontend
 @app.get("/", tags=["meta"])
