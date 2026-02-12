@@ -7,12 +7,10 @@ import { api } from './api';
 import type { ClaimRequest } from './types';
 
 export const claimService = {
-  /**
-   * Create a claim for items from a listing
-   */
+  // Create a claim for items from a listing
   create: async (data: ClaimRequest): Promise<void> => {
     await api.post('/claims', {
-      user_id: data.user_id,
+      user_branch_id: data.user_branch_id,
       items: data.items,
     });
   },

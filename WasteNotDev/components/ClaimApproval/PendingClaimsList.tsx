@@ -1,18 +1,21 @@
-// TODO: description
-// TODO: References
-// TODO: GET RID OF UNNECESSARY STYLING
+// Main component for the Approvals tab
+// Displays two sections: Pending Claims (for approval) and Awaiting Pickup (approved claims)
+// Handles claim approval workflow and refresh functionality
+// Shows appropriate loading, error, and empty states for each section
+
 
 import React from 'react';
-import { View,Text,FlatList,StyleSheet,RefreshControl,ActivityIndicator,Alert,} from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { usePendingClaims } from '@/hooks/usePendingClaims';
 import { PendingClaimCard } from './PendingClaimCard';
-import { PendingClaimDetail } from '@/services/claimApprovalService';
+import { ApprovedClaimCard } from './ApprovedClaimCard';
+import { PendingClaimDetail, ApprovedClaimGroup } from '@/services/claimApprovalService';
 
 export const PendingClaimsList: React.FC = () => {
   const branchId = '03a897a0-e271-4174-aed2-d283a888dbae';
   const userBranchId = '0ca58dd2-df98-42ee-b0a4-f6b43c00a3d8';
 
-  const { claims, loading, error, refresh, approveClaim, approving } =
+  const { claims, approvedClaims, loading, error, refresh, approveClaim, approving } =
     usePendingClaims(branchId, userBranchId);
 
   const handleApproveClaim = (claimId: string) => {
@@ -26,7 +29,7 @@ export const PendingClaimsList: React.FC = () => {
     );
   };
 
-  if (loading && claims.length === 0) {
+  if (loading && claims.length === 0 && approvedClaims.length === 0) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -37,7 +40,7 @@ export const PendingClaimsList: React.FC = () => {
         </View>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#2196F3" />
-          <Text style={styles.loadingText}>Loading pending claims...</Text>
+          <Text style={styles.loadingText}>Loading claims...</Text>
         </View>
       </View>
     );
@@ -59,27 +62,13 @@ export const PendingClaimsList: React.FC = () => {
     );
   }
 
-  if (claims.length === 0) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Claim Approvals</Text>
-          <Text style={styles.headerSubtitle}>
-            Review and approve claims from your branch
-          </Text>
-        </View>
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>✓ No pending claims</Text>
-          <Text style={styles.emptySubtext}>
-            Claims will appear here when they need approval
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={loading} onRefresh={refresh} />
+      }
+    >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Claim Approvals</Text>
         <Text style={styles.headerSubtitle}>
@@ -87,25 +76,55 @@ export const PendingClaimsList: React.FC = () => {
         </Text>
       </View>
 
-      <FlatList
-        data={claims}
-        keyExtractor={(item) => item.claim_id}
-        renderItem={({ item }: {item: PendingClaimDetail}) => (
-          <PendingClaimCard
-            claim={item}
-            onApprove={handleApproveClaim}
-            approving={approving === item.claim_id}
-          />
+      {/* Pending Claims Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Pending Claims</Text>
+        {claims.length === 0 ? (
+          <View style={styles.emptySection}>
+            <Text style={styles.emptyText}>✓ No pending claims</Text>
+            <Text style={styles.emptySubtext}>
+              Claims will appear here when they need approval
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.listContainer}>
+            {claims.map((claim: PendingClaimDetail) => (
+              <PendingClaimCard
+                key={claim.claim_id}
+                claim={claim}
+                onApprove={handleApproveClaim}
+                approving={approving === claim.claim_id}
+              />
+            ))}
+          </View>
         )}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refresh} />
-        }
-      />
-    </View>
+      </View>
+
+      {/* Awaiting Pickup Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Awaiting Pickup</Text>
+        {approvedClaims.length === 0 ? (
+          <View style={styles.emptySection}>
+            <Text style={styles.emptyText}>✓ No claims awaiting pickup</Text>
+            <Text style={styles.emptySubtext}>
+              Approved claims will appear here until picked up
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.listContainer}>
+            {approvedClaims.map((claimGroup: ApprovedClaimGroup) => (
+              <ApprovedClaimCard
+                key={claimGroup.charity_user_branch_id}
+                claimGroup={claimGroup}
+              />
+            ))}
+          </View>
+        )}
+      </View>
+    </ScrollView>
   );
 };
-
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -128,14 +147,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  section: {
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  listContainer: {
+    paddingHorizontal: 16,
+  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-  },
-  listContainer: {
-    padding: 16,
   },
   loadingText: {
     marginTop: 12,
@@ -146,6 +176,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#f44336',
     textAlign: 'center',
+  },
+  emptySection: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 30,
+    marginHorizontal: 16,
+    alignItems: 'center',
   },
   emptyText: {
     fontSize: 18,
@@ -159,3 +196,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+// REFERENCES

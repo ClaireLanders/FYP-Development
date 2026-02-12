@@ -1,5 +1,3 @@
-// TODO: description
-// TODO: References
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
@@ -70,6 +68,7 @@ export const PendingClaimCard: React.FC<PendingClaimCardProps> = ({
   );
 };
 
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',

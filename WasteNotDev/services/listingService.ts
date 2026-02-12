@@ -1,11 +1,5 @@
 // Listing-related API calls
-// Provides service functions for all listing operations:
-// - getAvailable: Fetch all available listings (for browsing)
-// - getByBranch: Fetch listings created by specific branch
-// - create: Create new listing
-// - updateItem: Update quantities of line items
-// - cancel: Cancel entire listing
-// Centralises all listing-related backend communication
+// Provides service functions for all listing operations
 
 import { api } from './api';
 import type { Listing, CreateListingRequest, UpdateListingItemRequest } from './types';

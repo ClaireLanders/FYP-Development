@@ -1,15 +1,15 @@
-// TODO: Description and sources
+
 
 import { useState, useEffect, useCallback } from 'react';
 import { pickupService, PickupQRData } from '@/services/pickupService';
 
-export const usePickupQR = (claimId: string, userId: string) => {
+export const usePickupQR = (claimId: string, UserBranchId: string) => {
   const [qrData, setQrData] = useState<PickupQRData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadQR = useCallback(async () => {
-    if (!claimId || !userId) {
+    if (!claimId || !UserBranchId) {
       setLoading(false);
       return;
     }
@@ -17,7 +17,7 @@ export const usePickupQR = (claimId: string, userId: string) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await pickupService.getPickupQR(claimId, userId);
+      const data = await pickupService.getPickupQR(claimId, UserBranchId);
       setQrData(data);
     } catch (err: any) {
       console.error('Error loading QR code:', err);
@@ -26,7 +26,7 @@ export const usePickupQR = (claimId: string, userId: string) => {
     } finally {
       setLoading(false);
     }
-  }, [claimId, userId]);
+  }, [claimId, UserBranchId]);
 
   useEffect(() => {
     loadQR();

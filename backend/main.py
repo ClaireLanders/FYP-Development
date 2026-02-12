@@ -2,8 +2,7 @@
 # This code is adapted from video "how to create a Fast APi & React Project" (Tech With Tim, 2024)
 # The database interactions for this code were adapted from (NeuralNine, 2025)
 # My own database and models were used, the video acted as a guide to understand the imports, models and endpoints
-# TEST - Commit
-# TEST again - will this let me commit?
+
 
 import uvicorn
 from fastapi import FastAPI, Depends, HTTPException, Query
@@ -13,6 +12,7 @@ from typing import List, Optional
 import psycopg2  # Postgres Driver
 from psycopg2 import pool
 from utils.qr_code import generate_qr_code, generate_secure_token
+from datetime import datetime, date
 
 # Setting up FastAPI
 app = FastAPI()
@@ -46,10 +46,7 @@ connection_pool = psycopg2.pool.ThreadedConnectionPool(
     port = 5432
 
 )
-# print statement for testing
-# TODO: REVMOVE !!
-if connection_pool:
-    print("connection pool created successfully")
+
 
 
 # Updated get_conn function for the pool
@@ -66,7 +63,7 @@ def get_conn():
 # from video "PostgreSQL in Python - Crash Course" (NeuralNine, 2023)
 # database connection
 # commentign out for the moment while working on the connection pool
-# TODO - remove?
+#
 # def get_conn():
 #     conn = psycopg2.connect(
 #         host="localhost",
@@ -130,7 +127,7 @@ class ClaimItem(BaseModel):
 
 
 class Claim(BaseModel):
-    user_id: str  # charity user making the claim
+    user_branch_id: str  # charity user making the claim
     items: List[ClaimItem]
 
 
@@ -165,7 +162,6 @@ class CancelListingOutput(BaseModel):
 
 
 # User Story 5
-# TODO: ADD SOURCES AND REFERENCES
 # Claim Approval Models
 class ClaimItemDetail(BaseModel):
     # Details of a single item in a claim
@@ -209,6 +205,20 @@ class PickupDetail(BaseModel):
     total_items: int
     approved_at: Optional[str] = None
 
+
+# Request to verify a pickup using a QR code
+class VerifyPickupRequest(BaseModel):
+    qr_code: str
+    user_branch_id: str  # Store worker's branch
+
+# Response after verifying the pickup
+class VerifyPickupResponse(BaseModel):
+    pickup_id: str
+    claim_id: str
+    success: bool
+    message: str
+    charity_name: Optional[str] = None
+    items: List[dict]
 
 
 
@@ -473,11 +483,11 @@ def create_claim(payload: Claim, conn=Depends(get_conn)):
             # Creating the claim, generating a unique id
             cur.execute(
                 """
-                INSERT INTO claim (user_id)
+                INSERT INTO claim (user_branch_id)
                 VALUES (%s)
                 RETURNING claim_id
                 """,
-                (payload.user_id,),  # trailing comma (single-argument tuple)
+                (payload.user_branch_id,),
             )
             claim_id = cur.fetchone()[0]
 
@@ -524,7 +534,7 @@ def create_claim(payload: Claim, conn=Depends(get_conn)):
                 )
 
 
-                # Adding the values per item in listing_claim_item table
+                # Adding the values per item in listing claim table
                 cur.execute(
                     """
                     INSERT INTO listing_claim_item (claim_id, listing_line_item_id, quantity)
@@ -535,7 +545,6 @@ def create_claim(payload: Claim, conn=Depends(get_conn)):
     return ClaimOutput(claim_id=str(claim_id))
 
 # User story 5
-# TODO: ADD SOURCE AND REFERENCE !!
 # Claims pending approval
 @app.get("/claims/pending", response_model=List[PendingClaimDetail])
 def get_pending_claims(
@@ -549,14 +558,15 @@ def get_pending_claims(
         cur.execute("""
             SELECT DISTINCT
                 c.claim_id,
-                c.user_id,
+                ub_charity.user_id,
                 c.created_at,
                 c.approved,
                 au.user_email,
                 o.org_name
             FROM claim c
-            JOIN app_user au ON au.user_id = c.user_id
-            JOIN user_branch ub_charity ON ub_charity.user_id = au.user_id
+            -- Getting charity user info via user_brandh_id:
+            JOIN user_branch ub_charity ON ub_charity.user_branch_id = c.user_branch_id
+            JOIN app_user au ON au.user_id = ub_charity.user_id
             JOIN organisation o ON o.org_id = ub_charity.org_id
             -- Getting claims for listings from this branch
             JOIN listing_claim_item lci ON lci.claim_id = c.claim_id
@@ -630,8 +640,9 @@ def approve_claim(payload: ApproveClaimRequest, conn=Depends(get_conn)):
             # Verify the claim exists
             cur.execute(
                 """
-                SELECT c.claim_id, c.approved, c.user_id
+                SELECT c.claim_id, c.approved, ub.user_id
                 FROM claim c
+                JOIN user_branch ub on ub.user_branch_id = c.user_branch_id
                 WHERE c.claim_id = %s
                 FOR UPDATE
                 """,
@@ -714,26 +725,25 @@ def approve_claim(payload: ApproveClaimRequest, conn=Depends(get_conn)):
 @app.get("/pickup/qr/{claim_id}")
 def get_pickup_qr(
         claim_id: str,
-        user_id:str = Query(..., description="User ID of charity that made the claim"),
+        user_branch_id:str = Query(..., description="User branch ID of charity that made the claim"),
         conn=Depends(get_conn)
 ):
     # getting the QR code for the specific claim
     with conn, conn.cursor() as cur:
-        # Verifying the claim belongs to this user
+        # Verifying the claim belongs to this user branch
         cur.execute(
             """
             SELECT claim_id, approved
             FROM claim
-            WHERE claim_id = %s AND user_id = %s
+            WHERE claim_id = %s AND user_branch_id = %s
             """,
-            (claim_id, user_id)
+            (claim_id, user_branch_id)
         )
 
         claim = cur.fetchone()
         if not claim:
             raise HTTPException(404, "Claim not found")
         # claim not approved
-        # TODO source for the errors
         if not claim[1]:
             raise HTTPException(400, "Claim not approved yet")
 
@@ -809,7 +819,7 @@ def get_pickup_qr(
 # Getting all approved claims for a charity user, showing pickups ready for collection.
 @app.get("/pickups/my-pickups", response_model=List[PickupDetail])
 def get_my_pickups(
-        branch _id: str = Query(..., description="Branch ID of charity to get pickups for"),
+        branch_id: str = Query(..., description="Branch ID of charity to get pickups for"),
         conn=Depends(get_conn)
 ):
     with conn, conn.cursor() as cur:
@@ -818,21 +828,22 @@ def get_my_pickups(
                 c.claim_id,
                 c.approved,
                 COALESCE(p.complete, FALSE) as complete,
-                o.org_name,
-                b.branch_name,
-                b.branch_location,
+                store_o.org_name,
+                store_b.branch_name,
+                store_b.branch_location,
                 c.approved_at
             FROM claim c
             LEFT JOIN pickup p ON p.claim_id = c.claim_id
             -- Getting the charity user's branch :
-            JOIN app_user au ON au.user_id = c.user_id
+            JOIN user_branch ub_charity ON ub_charity.user_branch_id = c.user_branch_id
+            -- Getting store branch details from listing
             JOIN listing_claim_item lci ON lci.claim_id = c.claim_id
             JOIN listing_line_item lli ON lli.listing_line_item_id = lci.listing_line_item_id
             JOIN listing l ON l.listing_id = lli.listing_id
-            JOIN user_branch ub ON ub.user_branch_id = l.user_branch_id
-            JOIN branch b ON b.branch_id = ub.branch_id
-            JOIN organisation o ON o.org_id = b.org_id
-            WHERE c.user_id = %s
+            JOIN user_branch ub_store ON ub_store.user_branch_id = l.user_branch_id
+            JOIN branch store_b ON store_b.branch_id = ub_store.branch_id
+            JOIN organisation store_o ON store_o.org_id = ub_store.org_id
+            WHERE ub_charity.branch_id = %s
             AND c.approved = TRUE
             ORDER BY c.approved_at DESC
         """, (branch_id,))
@@ -875,6 +886,218 @@ def get_my_pickups(
 
         return result
 
+
+# Verify a pickup by scanning QR code done by the store worker when a charity volunteer shows QR code
+@app.post("/pickup/verify", response_model=VerifyPickupResponse)
+def verify_pickup(payload: VerifyPickupRequest, conn=Depends(get_conn)):
+    with conn:
+        with conn.cursor() as cur:
+            # Find pickup by QR code
+            cur.execute(
+                """
+                SELECT p.pickup_id, p.claim_id, p.complete, c.user_branch_id
+                FROM pickup p
+                JOIN claim c ON c.claim_id = p.claim_id
+                WHERE p.qr_code = %s
+                FOR UPDATE
+                """,
+                (payload.qr_code,)
+            )
+
+            pickup_row = cur.fetchone()
+
+            if not pickup_row:
+                raise HTTPException(404, "Invalid QR code")
+
+            pickup_id, claim_id, complete, charity_user_branch_id = pickup_row
+
+            if complete:
+                raise HTTPException(400, "This pickup has already been completed")
+
+            # Get items and verify branch
+            cur.execute(
+                """
+                SELECT 
+                    lci.listing_claim_item_id, 
+                    lci.quantity,
+                    lli.listing_id,
+                    lli.product_id,
+                    p.product_name,
+                    l.user_branch_id 
+                FROM listing_claim_item lci
+                JOIN listing_line_item lli ON lli.listing_line_item_id = lci.listing_line_item_id
+                JOIN listing l ON l.listing_id = lli.listing_id
+                JOIN product p ON p.product_id = lli.product_id
+                WHERE lci.claim_id = %s
+                """,
+                (claim_id,)
+            )
+
+            items_rows = cur.fetchall()
+
+            if not items_rows:
+                raise HTTPException(404, "No items found for this claim")
+
+            # Verifying store worker's branch matches
+            listing_user_branch_id = items_rows[0][5] # gets the 5th position from the select statement (l.user_branch_id)
+
+            if str(listing_user_branch_id) != payload.user_branch_id:
+                raise HTTPException(
+                    403,
+                    "This pickup is for a different branch"
+                )
+
+            # Getting charity organisation name
+            cur.execute(
+                """
+                SELECT o.org_name, b.branch_name
+                FROM user_branch ub
+                JOIN organisation o ON o.org_id = ub.org_id
+                JOIN branch b ON b.branch_id = ub.branch_id
+                WHERE ub.user_branch_id = %s
+                """,
+                (charity_user_branch_id,)
+            )
+
+            charity_row = cur.fetchone()
+            charity_name = f"{charity_row[0]} - {charity_row[1]}" if charity_row else "Unknown"
+
+            # Mark pickup as complete
+            cur.execute(
+                """
+                UPDATE pickup
+                SET complete = TRUE
+                WHERE pickup_id = %s
+                """,
+                (pickup_id,)
+            )
+
+            # Format items for response
+            items = [
+                {
+                    "product_name": row[4],
+                    "quantity": int(row[1])
+                }
+                for row in items_rows
+            ]
+
+            return VerifyPickupResponse(
+                pickup_id=str(pickup_id),
+                claim_id=str(claim_id),
+                success=True,
+                message=f"Pickup verified! Please give {charity_name} their items.",
+                charity_name=charity_name,
+                items=items
+            )
+
+# Getting all approved claims awaiting pickup for a store's branch.
+# Only includes listings created today, showing quantity claimed vs quantity listed with remaining quantities.
+# Add this endpoint to backend/main.py
+# This endpoint gets approved claims awaiting pickup for a store's branch
+# Grouped by charity, only today's listings, showing claimed/listed/remaining quantities
+
+@app.get("/claims/approved-awaiting-pickup")
+def get_approved_awaiting_pickup(
+        branch_id: str = Query(..., description="Branch ID to get approved claims for"),conn=Depends(get_conn)):
+    with conn, conn.cursor() as cur:
+
+        # Query to get approved claims awaiting pickup grouped by charity
+        cur.execute(
+            """
+            SELECT 
+                c.claim_id,
+                c.created_at as claim_created_at,
+                c.approved_at,
+                org.org_name as charity_org_name,
+                b.branch_name as charity_branch_name,
+                ub.user_branch_id as charity_user_branch_id,
+                prod.product_name,
+                lci.quantity as quantity_claimed,
+                lli.quantity as quantity_remaining
+            FROM claim c
+            JOIN pickup p ON c.claim_id = p.claim_id
+            JOIN listing_claim_item lci ON c.claim_id = lci.claim_id
+            JOIN listing_line_item lli ON lci.listing_line_item_id = lli.listing_line_item_id
+            JOIN listing l ON lli.listing_id = l.listing_id
+            JOIN product prod ON lli.product_id = prod.product_id
+            -- Getting charity info
+            JOIN user_branch ub ON c.user_branch_id = ub.user_branch_id
+            JOIN branch b ON ub.branch_id = b.branch_id
+            JOIN organisation org ON b.org_id = org.org_id
+            -- Getting store's branch via listing's user_branch
+            JOIN user_branch ub_store ON l.user_branch_id = ub_store.user_branch_id
+            WHERE ub_store.branch_id = %s
+            AND c.approved = TRUE
+            AND p.complete = FALSE
+            AND DATE(p.created_at)= CURRENT_DATE
+            ORDER BY org.org_name, c.created_at, prod.product_name
+            """,
+            (branch_id,))
+
+
+        rows = cur.fetchall()
+
+        if not rows:
+            return []
+
+        # Group results by charity
+        charity_groups = {}
+
+        for row in rows:
+            claim_id = row[0]
+            claim_created_at = row[1]
+            approved_at = row[2]
+            charity_org_name = row[3]
+            charity_branch_name = row[4]
+            charity_user_branch_id = row[5]
+            product_name = row[6]
+            quantity_claimed = row[7]
+            quantity_remaining = row[8]
+
+            # Create charity group key
+            charity_key = charity_user_branch_id
+
+            # Initialize charity group if not exists
+            if charity_key not in charity_groups:
+                charity_groups[charity_key] = {
+                    "charity_org_name": charity_org_name,
+                    "charity_branch_name": charity_branch_name,
+                    "charity_user_branch_id": charity_user_branch_id,
+                    "claims": {}
+                }
+
+            # Initialize claim if not exists
+            if claim_id not in charity_groups[charity_key]["claims"]:
+                charity_groups[charity_key]["claims"][claim_id] = {
+                    "claim_id": claim_id,
+                    "claim_created_at": claim_created_at.isoformat(),
+                    "approved_at": approved_at.isoformat(),
+                    "items": []
+                }
+
+            # Add item to claim
+            charity_groups[charity_key]["claims"][claim_id]["items"].append({
+                "product_name": product_name,
+                "quantity_claimed": quantity_claimed,
+                "quantity_remaining": quantity_remaining
+            })
+
+        # Convert to final response format
+        response = []
+        for charity_key, charity_data in charity_groups.items():
+            claims_list = list(charity_data["claims"].values())
+            total_items = sum(len(claim["items"]) for claim in claims_list)
+
+            response.append({
+                "charity_org_name": charity_data["charity_org_name"],
+                "charity_branch_name": charity_data["charity_branch_name"],
+                "charity_user_branch_id": charity_data["charity_user_branch_id"],
+                "total_claims": len(claims_list),
+                "total_items": total_items,
+                "claims": claims_list
+            })
+
+        return response
 # Testing suggested by ChatGPT (ChatGPT, 2025)
 # for web frontend
 @app.get("/", tags=["meta"])
@@ -882,16 +1105,15 @@ def root():
     return {"status": "ok", "docs": "/docs"}
 
 # Shutdown event to close connection pool (Chowdhury, 2025)
-# TODO: remove print staemtn
 @app.on_event("shutdown")
 def shutdown_event():
     if connection_pool:
         connection_pool.closeall()
-        print("Connection pool closed")
+
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)
 
 # REFERENCES
 # ChatGPT. (2025, November 7). Retrieved from chatgpt.com: https://chatgpt.com/c/69176485-1458-8331-b053-4df0abe35697

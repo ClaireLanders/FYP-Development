@@ -1,4 +1,4 @@
-// TODO: ADD DESCRIPTION AND SOURCES
+
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
@@ -6,9 +6,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { QRCodeDisplay } from '@/components/Pickup/QRCodeDisplay';
 
 export default function PickupQRScreen() {
-  const { claimId, userId } = useLocalSearchParams<{
+  const { claimId, UserBranchId } = useLocalSearchParams<{
     claimId: string;
-    userId: string;
+    UserBranchId: string;
   }>();
   const router = useRouter();
 
@@ -16,13 +16,14 @@ export default function PickupQRScreen() {
     <View style={styles.container}>
       <QRCodeDisplay
         claimId={claimId || ''}
-        userId={userId || ''}
+        UserBranchId={UserBranchId || ''}
         onBack={() => router.back()}
       />
     </View>
   );
 }
 
+//(ReactNative, 2026)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -7,7 +7,7 @@
 import axios, { AxiosRequestConfig } from 'axios';
 
 // This is my laptop's ip address - for working with the android tablet
-const API_BASE_URL = 'http://192.168.68.59:8000';
+const API_BASE_URL = 'http://192.168.68.65:8001';
 
 const config: AxiosRequestConfig = {
   baseURL: API_BASE_URL,

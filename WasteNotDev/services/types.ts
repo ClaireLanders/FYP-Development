@@ -1,12 +1,5 @@
 // Core data types matching backend API
-// Defines TypeScript interfaces for:
-// - Product: Basic product information
-// - ListingLineItem: Individual items in a listing
-// - Listing: Complete listing with organization and branch info
-// - CreateListingRequest: Payload for creating listings
-// - UpdateListingItemRequest: Payload for updating quantities
-// - ClaimRequest: Payload for claiming items
-// - ApiError: Error response structure
+// Defines TypeScript interfaces
 // Ensures type safety across the app
 
 export interface Product {
@@ -46,7 +39,7 @@ export interface UpdateListingItemRequest {
 }
 
 export interface ClaimRequest {
-  user_id: string;
+  user_branch_id: string;
   items: Array<{
     listing_line_item_id: string;
     quantity: number;
@@ -58,8 +51,7 @@ export interface ApiError {
   status?: number;
 }
 
-// User Story 5
-// TODO: add references and sources
+
 
 
 // REFERENCES

@@ -4,6 +4,7 @@
 // Manages claim state and communicates with the backend via claimService
 // Displays loading states and handles errors appropriately
 // This is adapted for React Native from my own code in frontend/src/components/Browse.jsx
+// (ReactNative, 2026)
 
 import React, { useState } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, View, RefreshControl} from 'react-native';
@@ -15,7 +16,7 @@ import { claimService } from '../../services/claimService';
 import type { Listing } from '../../services/types';
 
 // TODO: Replace with actual user context
-const USER_ID = '10e30991-20d0-4580-a48e-6664cab10323';
+const USER_BRANCH_ID = '546c6ef4-ef5d-4582-b1c6-6977a42d1ce1';
 
 export const ListingBrowser = () => {
   const { listings, loading, refetch } = useListings();
@@ -53,7 +54,7 @@ export const ListingBrowser = () => {
     try {
       setClaiming(true);
       await claimService.create({
-        user_id: USER_ID,
+        user_branch_id: USER_BRANCH_ID,
         items,
       });
 
@@ -138,7 +139,7 @@ export const ListingBrowser = () => {
     </ThemedView>
   );
 };
-
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

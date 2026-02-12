@@ -5,6 +5,7 @@
 
 import { Tabs } from 'expo-router';
 import React from 'react';
+import {Text} from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -40,9 +41,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-          name="approval"
+          name="approvals"
           options={{
-              title: 'Approval',
+              title: 'Approvals',
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />,
           }}
       />
@@ -50,7 +51,15 @@ export default function TabLayout() {
           name="pickups"
           options={{
               title: 'Pickups',
-              tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📦</Text>,
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />,
+          }}
+      />
+      <Tabs.Screen
+          name="qr-scanner"
+          options={{
+              title: 'QR Scanner',
+              tabBarIcon: ({color, focused}) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right"
+                                                            color={color} />
           }}
       />
     </Tabs>

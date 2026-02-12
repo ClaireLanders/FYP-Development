@@ -1,5 +1,4 @@
-// TODO: ADD DESCRIPTION AND SOURCES
-// TODO: GET RID OF UNNESSESARY COMMENTS
+// Adapted from (MaterialUI, 2026)
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
@@ -34,7 +33,7 @@ export const ClaimStatusBadge: React.FC<ClaimStatusBadgeProps> = ({
     </View>
   );
 };
-
+// (ReactNative, 2026)
 const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 16,
@@ -57,3 +56,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+
+// REFERENCES
+//Material-UI. (2026, February 4). Badge. Retrieved from mui.com: https://mui.com/material-ui/react-badge/
