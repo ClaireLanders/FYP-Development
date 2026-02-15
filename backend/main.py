@@ -1131,7 +1131,7 @@ def get_basic_metrics(branch_id: str, days: int = 30, conn=Depends(get_conn)):
             """
             SELECT
             COUNT(DISTINCT p.pickup_id) as pickups_count, 
-            COALESCE(SUM(lli.quantity), 0) as total_items_rescued
+            COALESCE(SUM(lci.quantity), 0) as total_items_rescued
             FROM pickup p
             JOIN claim c ON p.claim_id = c.claim_id
             JOIN listing_claim_item lci ON c.claim_id = lci.claim_id
