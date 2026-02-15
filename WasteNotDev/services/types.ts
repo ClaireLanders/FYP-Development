@@ -52,7 +52,19 @@ export interface ApiError {
 }
 
 
-
+// user story 7
+export interface BasicMetrics{
+    period:{
+        start_date: string;
+        end_date: string;
+        days: number;
+    };
+    listings_count: number;
+    total_items_listed: number;
+    pickups_completed: number;
+    total_items_rescued: number;
+    rescue_rate: number;
+}
 
 // REFERENCES
 // ChatGPT. (2025, November 7). Retrieved from chatgpt.com: https://chatgpt.com/c/69176485-1458-8331-b053-4df0abe35697
