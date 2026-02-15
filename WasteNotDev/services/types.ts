@@ -66,6 +66,36 @@ export interface BasicMetrics{
     rescue_rate: number;
 }
 
+// User Story 8
+// Charts
+export interface ChartConfig {
+  type: 'bar' | 'line' | 'pie';
+  title: string;
+  labels: string[];
+  values: number[];
+  colors: string[];
+  description: string;
+}
+
+export interface GenerateChartResponse {
+  chart_config: ChartConfig;
+  metrics: BasicMetrics;
+}
+
+// Chats
+export interface ChatMessage {
+  question: string;
+  answer: string;
+  timestamp: Date;
+}
+
+export interface ChatResponse {
+  answer: string;
+  metrics: BasicMetrics;
+}
+
+
+
 // REFERENCES
 // ChatGPT. (2025, November 7). Retrieved from chatgpt.com: https://chatgpt.com/c/69176485-1458-8331-b053-4df0abe35697
 // ChatGPT. (2025, November 11). Retrieved from chatgpt.com: https://chatgpt.com/c/69203ef4-2430-8326-be09-e8e39fed78c5

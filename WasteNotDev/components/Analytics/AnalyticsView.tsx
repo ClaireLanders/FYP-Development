@@ -1,4 +1,6 @@
-// app/(tabs)/analytics.tsx
+// Main analytics view component
+// Displays metrics, AI chart generation, and chat interface
+// TODO REFERENCE AND COMMENT!!!
 import React, { useState } from 'react';
 import {
     View,
@@ -6,52 +8,50 @@ import {
     Text,
     StyleSheet,
     ActivityIndicator,
-    RefreshControl,
-    TouchableOpacity,
-    TextInput,
-    KeyboardAvoidingView,
-    Platform
+    RefreshControl
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { useAnalyticsChat } from '@/hooks/useAnalyticsChat'
+import { useAnalyticsChat } from '@/hooks/useAnalyticsChat';
 import { analyticsService } from '@/services/analyticsService';
-import Chart  from '@/components/Analytics/GenerateChartButton';
-import type { ChartConfig} from "@/services/types";
+import GenerateChartButton from './GenerateChartButton';
+import Chart from './Chart';
+import ChatSection from './AIChat';
+import type { ChartConfig } from '@/services/types';
+import MetricCard from "@/components/Analytics/MetricCard";
 
-// TODO: Replace with actual branch ID from auth context
-const BRANCH_ID = '03a897a0-e271-4174-aed2-d283a888dbae'; // Tesco Express
+const BRANCH_ID = '03a897a0-e271-4174-aed2-d283a888dbae';
 
-export default function AnalyticsScreen() {
+export function AnalyticsView() {
     const { metrics, loading, error, fetchMetrics } = useAnalytics(BRANCH_ID, 30);
-    const { messages, loading: chatLoading, askQuestion} = useAnalyticsChat(BRANCH_ID, 30);
+    const { messages, loading: chatLoading, askQuestion } = useAnalyticsChat(BRANCH_ID, 30);
 
     const [chartConfig, setChartConfig] = useState<ChartConfig | null>(null);
     const [generatingChart, setGeneratingChart] = useState(false);
     const [question, setQuestion] = useState('');
 
-    // Refresh when tab gains focus
     useFocusEffect(
         React.useCallback(() => {
             void fetchMetrics();
         }, [])
     );
+
     const handleGenerateChart = async () => {
         setGeneratingChart(true);
-        try{
+        try {
             const response = await analyticsService.generateChart(BRANCH_ID, 30);
             setChartConfig(response.chart_config);
-        } catch (e){
+        } catch (e) {
             console.error('Failed to generate chart:', e);
-        }finally{
+        } finally {
             setGeneratingChart(false);
         }
     };
 
-    const handleAskQuestion = async () =>{
+    const handleAskQuestion = async () => {
         if (!question.trim()) return;
         await askQuestion(question);
-        setQuestion(''); // clearing input after asking
+        setQuestion('');
     };
 
     if (loading && !metrics) {
@@ -95,41 +95,28 @@ export default function AnalyticsScreen() {
                     Last {metrics.period.days} days
                 </Text>
             </View>
-
             <View style={styles.metricsContainer}>
-                <View style={styles.metricCard}>
-                    <Text style={styles.metricTitle}>ITEMS LISTED</Text>
-                    <Text style={styles.metricValue}>
-                        {metrics.total_items_listed.toLocaleString()}
-                    </Text>
-                </View>
-
-                <View style={styles.metricCard}>
-                    <Text style={styles.metricTitle}>ITEMS RESCUED</Text>
-                    <Text style={styles.metricValue}>
-                        {metrics.total_items_rescued.toLocaleString()}
-                    </Text>
-                </View>
-
-                <View style={styles.metricCard}>
-                    <Text style={styles.metricTitle}>RESCUE RATE</Text>
-                    <Text style={styles.metricValue}>{metrics.rescue_rate}%</Text>
-                </View>
-
-                <View style={styles.metricCard}>
-                    <Text style={styles.metricTitle}>TOTAL LISTINGS</Text>
-                    <Text style={styles.metricValue}>
-                        {metrics.listings_count.toLocaleString()}
-                    </Text>
-                </View>
-
-                <View style={styles.metricCard}>
-                    <Text style={styles.metricTitle}>COMPLETED PICKUPS</Text>
-                    <Text style={styles.metricValue}>
-                        {metrics.pickups_completed.toLocaleString()}
-                    </Text>
-                </View>
+            <MetricCard title="ITEMS LISTED" value={metrics.total_items_listed} />
+            <MetricCard title="ITEMS RESCUED" value={metrics.total_items_rescued} />
+            <MetricCard title="RESCUE RATE" value={`${metrics.rescue_rate}%`} />
+            <MetricCard title="TOTAL LISTINGS" value={metrics.listings_count} />
+            <MetricCard title="COMPLETED PICKUPS" value={metrics.pickups_completed} />
             </View>
+
+            <GenerateChartButton
+                onPress={handleGenerateChart}
+                loading={generatingChart}
+            />
+
+            {chartConfig && <Chart chartConfig={chartConfig} />}
+
+            <ChatSection
+                messages={messages}
+                question={question}
+                onQuestionChange={setQuestion}
+                onSend={handleAskQuestion}
+                loading={chatLoading}
+            />
 
             <View style={styles.footer}>
                 <Text style={styles.footerText}>Pull down to refresh</Text>
@@ -169,26 +156,7 @@ const styles = StyleSheet.create({
     metricsContainer: {
         padding: 16
     },
-    metricCard: {
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        padding: 20,
-        marginBottom: 12,
-        borderLeftWidth: 4,
-        borderLeftColor: '#4CAF50'
-    },
-    metricTitle: {
-        fontSize: 12,
-        color: '#666',
-        fontWeight: '600',
-        letterSpacing: 0.5,
-        marginBottom: 8
-    },
-    metricValue: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#333'
-    },
+
     loadingText: {
         marginTop: 12,
         fontSize: 16,
@@ -213,8 +181,3 @@ const styles = StyleSheet.create({
         color: '#999'
     }
 });
-
-// REFERENCES - TODO: REPLACE
-// React Native. (2025). StyleSheet. Retrieved from reactnative.dev/docs
-// React Native. (2025). ScrollView. Retrieved from reactnative.dev/docs
-// Expo. (2025). Navigation. Retrieved from docs.expo.dev

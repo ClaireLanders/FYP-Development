@@ -1,6 +1,6 @@
-// decription
+// description
 // references as i go
-// TODO: compare to in-class one
+// TODO: compare to in-class one, references, description
 
 
 import React from 'react';
@@ -9,35 +9,18 @@ import { View, Text, StyleSheet } from 'react-native';
 interface MetricCardProps {
     title: string;
     value: number | string;
-    unit?: string;
-    icon: string;
-    color?: string;
 }
 
-export const MetricCard: React.FC<MetricCardProps> = ({
-    title,
-    value,
-    unit = '',
-    icon,
-    color = '#4CAF50'
-}) => {
-    return (
-        <View style={[styles.card, { borderLeftColor: color }]}>
-            <View style={styles.header}>
-                <Text style={styles.icon}>{icon}</Text>
-                <Text style={styles.title}>{title}</Text>
-            </View>
-            <View style={styles.valueContainer}>
-                <Text style={styles.value}>
-                    {typeof value === 'number'
-                        ? value.toLocaleString()
-                        : value}
-                </Text>
-                {unit && <Text style={styles.unit}> {unit}</Text>}
-            </View>
+export default function MetricCard({title, value}: MetricCardProps){
+    return(
+        <View style={styles.card}>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.value}>
+                {typeof value === 'number' ? value.toLocaleString() : value}
+            </Text>
         </View>
     );
-};
+}
 
 // TODO: SIMPLIFY !!
 

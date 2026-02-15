@@ -13,7 +13,25 @@ import psycopg2  # Postgres Driver
 from psycopg2 import pool
 from utils.qr_code import generate_qr_code, generate_secure_token
 from datetime import datetime, date, timedelta
+# open ai api setup
+from dotenv import load_dotenv
+import os
+from openai import OpenAI
+import json
 
+# Loading environment variables from .env file
+load_dotenv()
+
+# Testing that API key is loaded
+api_key = os.getenv("OPENAI_API_KEY")
+if api_key:
+    print(f"OpenAI API key loaded: {api_key[:20]}...")
+else:
+    print("OpenAI API key not found in .env file")
+
+openai_client = OpenAI(api_key=api_key)
+
+# --------
 # Setting up FastAPI
 app = FastAPI()
 
@@ -219,6 +237,17 @@ class VerifyPickupResponse(BaseModel):
     message: str
     charity_name: Optional[str] = None
     items: List[dict]
+
+# User Story 8
+# Generating Chart
+class GenerateChartRequest(BaseModel):
+    branch_id: str
+    days: int = 30
+# AI analytics chat
+class AnalyticsChatRequest(BaseModel):
+    branch_id:str
+    question: str
+    days: int = 30
 
 
 
@@ -1167,7 +1196,138 @@ def get_basic_metrics(branch_id: str, days: int = 30, conn=Depends(get_conn)):
             "total_items_rescued": int(total_items_rescued),
             "rescue_rate": round(rescue_rate, 2)
         }
+# User Story 8
+# Generate Chart with AI
+# Analyses current metrics and generates appropriate chart visualization
+@app.post("/analytics/generate-chart")
+def generate_chart(payload: GenerateChartRequest, conn=Depends(get_conn)):
 
+    try:
+        # Getting current metrics
+        print(f"Generating chart for branch: {payload.branch_id}")
+        metrics = get_basic_metrics(
+            branch_id=payload.branch_id,
+            days=payload.days,
+            conn=conn
+        )
+        print(f"Metrics retrieved: {metrics}")
+
+        # Building context for AI chart generation
+        # Adapted from OpenAI JSON Mode documentation (OpenAI, 2024)
+        chart_prompt = f""" 
+        You are a data visualization expert for WasteNot, a food rescue platform.
+        Analyse these metrics and create the BEST chart to visualize the store's performance:
+        Metrics (last {payload.days} days):
+        - Total listings: {metrics['listings_count']}
+        - Total items listed: {metrics['total_items_listed']}
+        - Completed pickups: {metrics['pickups_completed']}
+        - Items rescued: {metrics['total_items_rescued']}
+        - Rescue rate: {metrics['rescue_rate']}%
+        Create a chart that best shows the store's waste reduction performance.
+        Respond with ONLY valid JSON in this format:
+        {{
+          "type": "bar",
+          "title": "Descriptive chart title",
+          "labels": ["Label 1", "Label 2", "Label 3"],
+          "values": [100, 200, 150],
+          "colors": ["#4CAF50", "#2196F3", "#FF9800"],
+          "description": "Brief explanation of what this chart shows"
+        }}
+        Chart type options: "bar", "line", "pie"
+        Use meaningful labels and actual metric values.
+        Choose colors that are visually distinct.
+        """
+
+        # Calling OpenAI
+        print("Calling OpenAI API for chart generation...")
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a data visualization expert. Always respond with valid JSON only, no markdown formatting."
+                },
+                {
+                    "role": "user",
+                    "content": chart_prompt
+                }
+            ],
+            temperature=0.7,
+            max_tokens=500,
+            response_format={"type": "json_object"}
+        )
+
+        # Parsing the AI response and returning chart configuration
+        chart_config = json.loads(response.choices[0].message.content)
+        print(f"Chart generated: {chart_config.get('title', 'Unknown')}")
+
+        return {
+            "chart_config": chart_config,
+            "metrics": metrics
+        }
+
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
+        raise HTTPException(500, f"Failed to parse AI chart response: {e}")
+    except Exception as e:
+        print(f"Chart generation error: {e}")
+        raise HTTPException(500, f"Failed to generate chart: {e}")
+
+
+# Analytics chat endpoint
+# Allows store owners to ask questions about their analytics data
+# Uses OpenAI GPT-4 to generate insights
+@app.post("/analytics/chat")
+def analytics_chat(payload: AnalyticsChatRequest, conn=Depends(get_conn)):
+    # Getting current analytics data for context
+    # Calling the basic metrics function
+    metrics = get_basic_metrics(
+        branch_id=payload.branch_id,
+        days=payload.days,
+        conn=conn
+    )
+    # Building context for the AI using the metrics (SOURCE)
+    # this was adapted from SOURCE TODO: SOURCE !!
+    # Adapted from OpenAI Chat Completions documentation (OpenAI, 2024)
+    data_context = f"""
+    You are an AI assistant for a food rescue platform called WasteNot.
+    Current store metrics (last {payload.days} days):
+    - Total listings: {metrics['listings_count']}
+    - Total items listed: {metrics['total_items_listed']}
+    - Completed pickups: {metrics['pickups_completed']}
+    - Items rescued: {metrics['total_items_rescued']}
+    - Rescue rate: {metrics['rescue_rate']}%
+    
+    The user has asked: "{payload.question}"
+    Provide a helpful, concise answer based on the data. 
+    Be conversational and actionable. Focus on insights, not just repeating numbers.
+    """
+
+    # Calling OpenAI API
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful analytics assistant for a food waste reduction platform."
+                },
+                {
+                    "role": "user",
+                    "content": data_context
+                }
+            ],
+            temperature=0.7,
+            max_tokens=300
+        )
+        ai_answer = response.choices[0].message.content
+
+        return{
+            "answer": ai_answer,
+            "metrics": metrics
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Failed to generate AI Response: {e}")
 
 
 
