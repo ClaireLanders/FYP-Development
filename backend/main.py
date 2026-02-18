@@ -17,12 +17,14 @@ from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
-import json
+import calendar
 
-# Loading environment variables from .env file
+
+# Loading environment variables from .env file TODO SOURCE?  (Isa AI Developer, 2025)
 load_dotenv()
 
 # Testing that API key is loaded
+#  (Isa AI Developer, 2025)
 api_key = os.getenv("OPENAI_API_KEY")
 if api_key:
     print(f"OpenAI API key loaded: {api_key[:20]}...")
@@ -239,15 +241,13 @@ class VerifyPickupResponse(BaseModel):
     items: List[dict]
 
 # User Story 8
-# Generating Chart
-class GenerateChartRequest(BaseModel):
-    branch_id: str
-    days: int = 30
 # AI analytics chat
 class AnalyticsChatRequest(BaseModel):
     branch_id:str
     question: str
-    days: int = 30
+    period_type: str = "month"  # defaults to a month
+    reference_date: str = None
+
 
 
 
@@ -1127,13 +1127,50 @@ def get_approved_awaiting_pickup(
 
         return response
 
-# User story 7
+# User story 7 (+8)
 # Getting the basic waste tracking metric for a shop
+# uses calenar-based periods (day, week, month, year) for accurate dat ranges
 # Returns the total items listed + rescued, the rescue rate, no.of listings, no. of complete pickups
 @app.get("/analytics/basic-metrics")
-def get_basic_metrics(branch_id: str, days: int = 30, conn=Depends(get_conn)):
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=days)
+def get_basic_metrics(
+        branch_id: str,
+        period_type:str ="month", # defaults to month
+        reference_date: str = None, # defaults to today
+        conn=Depends(get_conn)
+):
+    # Defaulting to today if no reference date is provided
+    if reference_date is None:
+        reference_date = date.today().isoformat()
+    ref = date.fromisoformat(reference_date)
+
+    # Calculating start and end dates based on period type
+    if period_type == "day":
+        start_date = datetime(ref.year, ref.month, ref.day, 0,0,0)
+        end_date = datetime(ref.year, ref.month, ref.day, 23,59,59 )
+        label = ref.strftime("%A %d %b %Y")
+    elif period_type == "week":
+        monday = ref - timedelta(days=ref.weekday())
+        sunday = monday+timedelta(days=6)
+        start_date = datetime(monday.year, monday.month, monday.day, 0,0,0)
+        end_date = datetime(sunday.year, sunday.month, sunday.day, 23,59,59)
+        label = f"{monday.strftime('%d %b')}-{sunday.strftime('%d %b %Y')}"
+
+    elif period_type == "month":
+        last_day_num = calendar.monthrange(ref.year, ref.month)[1]
+        start_date = datetime(ref.year, ref.month, 1, 0, 0, 0)
+        end_date = datetime(ref.year, ref.month, last_day_num, 23, 59, 59)
+        label = ref.strftime("%B %Y")
+
+    elif period_type == "year":
+        start_date = datetime(ref.year, 1, 1, 0, 0, 0)
+        end_date = datetime(ref.year, 12, 31, 23, 59, 59)
+        label = str(ref.year)
+
+    else: # all
+        start_date = datetime(2025, 1, 1)
+        end_date = datetime.now()
+        label = "All Time"
+
     with conn, conn.cursor() as cur:
         # Total items listed
         cur.execute(
@@ -1150,7 +1187,6 @@ def get_basic_metrics(branch_id: str, days: int = 30, conn=Depends(get_conn)):
             """,
             (branch_id, start_date, end_date)
         )
-
         listed_result = cur.fetchone()
         listings_count = listed_result[0] if listed_result else 0
         total_items_listed = listed_result[1] if listed_result else 0
@@ -1188,7 +1224,9 @@ def get_basic_metrics(branch_id: str, days: int = 30, conn=Depends(get_conn)):
             "period":{
                 "start_date": start_date.isoformat(),
                 "end_date": end_date.isoformat(),
-                "days": days
+                "period_type": period_type,
+                "reference_date": reference_date,
+                "label": label
             },
             "listings_count": listings_count,
             "total_items_listed": int(total_items_listed),
@@ -1196,102 +1234,31 @@ def get_basic_metrics(branch_id: str, days: int = 30, conn=Depends(get_conn)):
             "total_items_rescued": int(total_items_rescued),
             "rescue_rate": round(rescue_rate, 2)
         }
-# User Story 8
-# Generate Chart with AI
-# Analyses current metrics and generates appropriate chart visualization
-@app.post("/analytics/generate-chart")
-def generate_chart(payload: GenerateChartRequest, conn=Depends(get_conn)):
 
-    try:
-        # Getting current metrics
-        print(f"Generating chart for branch: {payload.branch_id}")
-        metrics = get_basic_metrics(
-            branch_id=payload.branch_id,
-            days=payload.days,
-            conn=conn
-        )
-        print(f"Metrics retrieved: {metrics}")
 
-        # Building context for AI chart generation
-        # Adapted from OpenAI JSON Mode documentation (OpenAI, 2024)
-        chart_prompt = f""" 
-        You are a data visualization expert for WasteNot, a food rescue platform.
-        Analyse these metrics and create the BEST chart to visualize the store's performance:
-        Metrics (last {payload.days} days):
-        - Total listings: {metrics['listings_count']}
-        - Total items listed: {metrics['total_items_listed']}
-        - Completed pickups: {metrics['pickups_completed']}
-        - Items rescued: {metrics['total_items_rescued']}
-        - Rescue rate: {metrics['rescue_rate']}%
-        Create a chart that best shows the store's waste reduction performance.
-        Respond with ONLY valid JSON in this format:
-        {{
-          "type": "bar",
-          "title": "Descriptive chart title",
-          "labels": ["Label 1", "Label 2", "Label 3"],
-          "values": [100, 200, 150],
-          "colors": ["#4CAF50", "#2196F3", "#FF9800"],
-          "description": "Brief explanation of what this chart shows"
-        }}
-        Chart type options: "bar", "line", "pie"
-        Use meaningful labels and actual metric values.
-        Choose colors that are visually distinct.
-        """
 
-        # Calling OpenAI
-        print("Calling OpenAI API for chart generation...")
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a data visualization expert. Always respond with valid JSON only, no markdown formatting."
-                },
-                {
-                    "role": "user",
-                    "content": chart_prompt
-                }
-            ],
-            temperature=0.7,
-            max_tokens=500,
-            response_format={"type": "json_object"}
-        )
-
-        # Parsing the AI response and returning chart configuration
-        chart_config = json.loads(response.choices[0].message.content)
-        print(f"Chart generated: {chart_config.get('title', 'Unknown')}")
-
-        return {
-            "chart_config": chart_config,
-            "metrics": metrics
-        }
-
-    except json.JSONDecodeError as e:
-        print(f"JSON decode error: {e}")
-        raise HTTPException(500, f"Failed to parse AI chart response: {e}")
-    except Exception as e:
-        print(f"Chart generation error: {e}")
-        raise HTTPException(500, f"Failed to generate chart: {e}")
 
 
 # Analytics chat endpoint
 # Allows store owners to ask questions about their analytics data
 # Uses OpenAI GPT-4 to generate insights
 @app.post("/analytics/chat")
-def analytics_chat(payload: AnalyticsChatRequest, conn=Depends(get_conn)):
+def analytics_chat(payload:AnalyticsChatRequest, conn=Depends(get_conn)):
     # Getting current analytics data for context
     # Calling the basic metrics function
     metrics = get_basic_metrics(
         branch_id=payload.branch_id,
-        days=payload.days,
+        period_type=payload.period_type,
+        reference_date=payload.reference_date,
         conn=conn
     )
     # Building context for the AI using the metrics (SOURCE)
     # this was adapted from SOURCE TODO: SOURCE !!
-    # Adapted from OpenAI Chat Completions documentation (OpenAI, 2024)
+    # Adapted from OpenAI Chat Completions documentation (OpenAI, 2024) ?? todo:correct??
     data_context = f"""
     You are an AI assistant for a food rescue platform called WasteNot.
-    Current store metrics (last {payload.days} days):
+    Current period: {metrics['period']['label']}
+    Store metrics for this period:
     - Total listings: {metrics['listings_count']}
     - Total items listed: {metrics['total_items_listed']}
     - Completed pickups: {metrics['pickups_completed']}
@@ -1304,6 +1271,8 @@ def analytics_chat(payload: AnalyticsChatRequest, conn=Depends(get_conn)):
     """
 
     # Calling OpenAI API
+    # Created with help from (Tech With Tim, 2023)
+
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
@@ -1320,7 +1289,7 @@ def analytics_chat(payload: AnalyticsChatRequest, conn=Depends(get_conn)):
             temperature=0.7,
             max_tokens=300
         )
-        ai_answer = response.choices[0].message.content
+        ai_answer = response.choices[0].message.content.strip()
 
         return{
             "answer": ai_answer,
@@ -1356,7 +1325,9 @@ if __name__ == "__main__":
 # REFERENCES
 # ChatGPT. (2025, November 7). Retrieved from chatgpt.com: https://chatgpt.com/c/69176485-1458-8331-b053-4df0abe35697
 # ChatGPT. (2025, November 11). Retrieved from chatgpt.com: https://chatgpt.com/c/69203ef4-2430-8326-be09-e8e39fed78c5
+# Isa AI Developer. (2025, March 26). How to Duild an AI API with Fast API and Open Ai (Beginner Tutorial). Retrieved from youtube.com: https://www.youtube.com/watch?v=MC3ZwphEf_U
 # NeuralNine. (2023, March 7). PostgreSQL in Python. Retrieved from youtube.com: https://www.youtube.com/watch?v=miEFm1CyjfM&t=33s
+# Tech With Tim. (2023, October 9). Create a Python GPT Chatbot - In Under 4 Minutes. Retrieved from youtube.com: https://www.youtube.com/watch?v=q5HiD5PNuck
 # Tim, T. W. (2024, November 19). How to Create a FastAPI & React Project-Python Backend + React Frontend. Retrieved from youtube.com: https://www.youtube.com/watch?v=aSdVU9-SxH4
 # W3 Schools. (2025, November 16). SQL Server COALESCE() Function. Retrieved from w3schools.com: https://www.w3schools.com/sql/func_sqlserver_coalesce.asp
 # Yamamoto, T. (2025, August 22). Preventing Race Conditions with SELECT FOR UPDATE in Web Applications. Retrieved from leapcell.io: https://leapcell.io/blog/preventing-race-conditions-with-select-for-update-in-web-applications
