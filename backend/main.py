@@ -13,11 +13,12 @@ import psycopg2  # Postgres Driver
 from psycopg2 import pool
 from utils.qr_code import generate_qr_code, generate_secure_token
 from datetime import datetime, date, timedelta
-# open ai api setup
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
 import calendar
+from analytics_helpers import generate_week_chart, generate_month_chart, generate_year_chart
+
 
 
 # Loading environment variables from .env file TODO SOURCE?  (Isa AI Developer, 2025)
@@ -1144,6 +1145,7 @@ def get_basic_metrics(
     ref = date.fromisoformat(reference_date)
 
     # Calculating start and end dates based on period type
+    # Used (2025, Gupta,R) for datetime, calendar, strftime formatting, calculations
     if period_type == "day":
         start_date = datetime(ref.year, ref.month, ref.day, 0,0,0)
         end_date = datetime(ref.year, ref.month, ref.day, 23,59,59 )
@@ -1235,6 +1237,60 @@ def get_basic_metrics(
             "rescue_rate": round(rescue_rate, 2)
         }
 
+# Analytics chart
+# Returns chart data for analytics visualisation based on period type
+@app.get("/analytics/chart")
+def get_period_chart(
+        branch_id: str,
+        period_type: str = "month",
+        reference_date: str = None,
+        conn=Depends(get_conn)
+):
+    # defaulting to today if no reference date provided
+    if reference_date is None:
+        reference_date = date.today().isoformat()
+    ref = date.fromisoformat(reference_date)
+
+    # Calculating start and end dates based on period type
+    # Used (2025, Gupta,R) for datetime, calendar, strftime formatting, calculations
+    if period_type == "week":
+        monday = ref - timedelta(days=ref.weekday())
+        sunday = monday + timedelta(days=6)
+        start_date = datetime(monday.year, monday.month, monday.day, 0, 0, 0)
+        end_date = datetime(sunday.year, sunday.month, sunday.day, 23, 59, 59)
+        label = f"{monday.strftime('%d %b')}-{sunday.strftime('%d %b %Y')}"
+    elif period_type == "month":
+        last_day_num = calendar.monthrange(ref.year, ref.month)[1]
+        start_date = datetime(ref.year, ref.month, 1, 0, 0, 0)
+        end_date = datetime(ref.year, ref.month, last_day_num, 23, 59, 59)
+        label = ref.strftime("%B %Y")
+    elif period_type == "year":
+        start_date = datetime(ref.year, 1, 1, 0, 0, 0)
+        end_date = datetime(ref.year, 12, 31, 23, 59, 59)
+        label = str(ref.year)
+
+    # Preparing period info for response
+    period_info = {
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+        "period_type": period_type,
+        "reference_date": reference_date,
+        "label": label
+    }
+    # Generating chart based on period type
+    with conn, conn.cursor() as cur:
+        if period_type == "week":
+            chart = generate_week_chart(cur, branch_id, ref, start_date, end_date)
+        elif period_type == "month":
+            chart = generate_month_chart(cur, branch_id, ref, start_date, end_date)
+        elif period_type == "year":
+            chart = generate_year_chart(cur, branch_id, ref, start_date, end_date)
+
+
+    return {
+        "period": period_info,
+        "chart": chart,
+    }
 
 
 
@@ -1272,7 +1328,6 @@ def analytics_chat(payload:AnalyticsChatRequest, conn=Depends(get_conn)):
 
     # Calling OpenAI API
     # Created with help from (Tech With Tim, 2023)
-
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
