@@ -57,14 +57,15 @@ app.add_middleware(
 # Connection Pool
 # Adapted from (Chowdhury, 2025)
 # Creating a connection pool of 2-20 connections
+# moved DB info to .env file
 connection_pool = psycopg2.pool.ThreadedConnectionPool(
     2, #min
     20, #max
-    host="localhost",
-    database="master",
-    user = "postgres",
-    password = "newpword3",
-    port = 5432
+    host=os.getenv("DB_HOST", "localhost"),
+    database=os.getenv("DB_NAME"),
+    user=os.getenv("DB_USER"),
+    password = os.getenv("DB_PASSWORD"),
+    port = os.getenv("DB_PORT", 5432)
 
 )
 

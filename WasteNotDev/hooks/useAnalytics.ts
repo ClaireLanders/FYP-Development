@@ -11,8 +11,8 @@ export const useAnalytics = (branchID: string) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string|null>(null);
 
-    // Time period state, defaulting to month and today's date
-    const [periodType, setPeriodType] = useState<'week' | 'month' | 'year'>('month');
+    // Time period state, defaulting to day and today's date
+    const [periodType, setPeriodType] = useState<'day'|'week' | 'month' | 'year'>('day');
     const [referenceDate, setReferenceDate] = useState<string | undefined>(undefined);
 
     const fetchMetrics = async (): Promise<void> => {
