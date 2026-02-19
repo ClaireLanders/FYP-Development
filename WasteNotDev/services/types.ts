@@ -52,12 +52,14 @@ export interface ApiError {
 }
 
 
-// user story 7
+// user story 7 & 8: analytics
 export interface BasicMetrics{
     period:{
         start_date: string;
         end_date: string;
-        days: number;
+        period_type: string;
+        reference_date: string;
+        label: string;
     };
     listings_count: number;
     total_items_listed: number;
@@ -68,18 +70,24 @@ export interface BasicMetrics{
 
 // User Story 8
 // Charts
-export interface ChartConfig {
-  type: 'bar' | 'line' | 'pie';
-  title: string;
-  labels: string[];
-  values: number[];
-  colors: string[];
-  description: string;
+export interface ChartDataset {
+  label: string;  // "Items Listed" or "Items Rescued"
+  data: number[];
 }
-
-export interface GenerateChartResponse {
-  chart_config: ChartConfig;
-  metrics: BasicMetrics;
+export interface Chart {
+  title: string;
+  labels: string[];  // x-axis labels
+  datasets: ChartDataset[];
+}
+export interface ChartResponse {
+  period: {
+    start_date: string;
+    end_date: string;
+    period_type: string;
+    reference_date: string;
+    label: string;
+  };
+  chart: Chart;
 }
 
 // Chats

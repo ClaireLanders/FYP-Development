@@ -1,99 +1,79 @@
-// AI-generated chart display component
-// Renders bar, line, or pie charts based on AI config
+// Chart display component
+// Renders charts using react-native-chart-kit
+// Displays breakdown by period (daily/weekly/monthly)
+
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
-import type { ChartConfig } from '@/services/types';
+import { LineChart } from 'react-native-chart-kit';
+import type { Chart } from '@/services/types';
 
 interface ChartProps {
-    chartConfig: ChartConfig;
+    chart: Chart;
 }
 
 const screenWidth = Dimensions.get('window').width;
 
-export default function Chart({ chartConfig }: ChartProps) {
-    const { type, title, labels, values, colors, description } = chartConfig;
+export default function ChartComponent({ chart }: ChartProps) {
+    const { title, labels, datasets } = chart;
 
+    // Prepare data for react-native-chart-kit
     const chartData = {
         labels: labels,
-        datasets: [{
-            data: values
-        }]
+        datasets: datasets.map(dataset => ({
+            data: dataset.data,
+            color: (opacity = 1) => dataset.label === 'Items Rescued'
+                ? `rgba(76, 175, 80, ${opacity})`  // Green for rescued
+                : `rgba(33, 150, 243, ${opacity})`, // Blue for listed
+            strokeWidth: 2
+        })),
+        legend: datasets.map(d => d.label)
     };
 
-    const chartStyle = {
+    const chartConfig = {
         backgroundColor: '#ffffff',
         backgroundGradientFrom: '#ffffff',
         backgroundGradientTo: '#ffffff',
-        decimalPlaces: 2,
-        color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
+        decimalPlaces: 0,
+        color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
         labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
         style: {
             borderRadius: 8
-        }
-    };
-
-    const renderChart = () => {
-        switch (type) {
-            case 'bar':
-                return (
-                    <BarChart
-                        data={chartData}
-                        width={screenWidth - 64}
-                        height={220}
-                        chartConfig={chartStyle}
-                        verticalLabelRotation={0}
-                        showValuesOnTopOfBars
-                        fromZero
-                        style={styles.chart}
-                    />
-                );
-
-            case 'line':
-                return (
-                    <LineChart
-                        data={chartData}
-                        width={screenWidth - 64}
-                        height={220}
-                        chartConfig={chartStyle}
-                        bezier
-                        style={styles.chart}
-                    />
-                );
-
-            case 'pie':
-                const pieData = labels.map((label, index) => ({
-                    name: label,
-                    population: values[index],
-                    color: colors[index] || '#000000',
-                    legendFontColor: '#333',
-                    legendFontSize: 12
-                }));
-
-                return (
-                    <PieChart
-                        data={pieData}
-                        width={screenWidth - 64}
-                        height={220}
-                        chartConfig={chartStyle}
-                        accessor="population"
-                        backgroundColor="transparent"
-                        paddingLeft="15"
-                        absolute
-                        style={styles.chart}
-                    />
-                );
-
-            default:
-                return <Text>Unsupported chart type</Text>;
+        },
+        propsForDots: {
+            r: '4',
+            strokeWidth: '2'
         }
     };
 
     return (
         <View style={styles.container}>
             <Text style={styles.title}>{title}</Text>
-            {renderChart()}
-            <Text style={styles.description}>{description}</Text>
+
+            <LineChart
+                data={chartData}
+                width={screenWidth - 32}
+                height={220}
+                chartConfig={chartConfig}
+                bezier
+                style={styles.chart}
+                withInnerLines={false}
+                withOuterLines={true}
+                withVerticalLines={false}
+                withHorizontalLines={true}
+            />
+
+            {/* Legend */}
+            <View style={styles.legend}>
+                {datasets.map((dataset, index) => (
+                    <View key={index} style={styles.legendItem}>
+                        <View style={[
+                            styles.legendColor,
+                            { backgroundColor: dataset.label === 'Items Rescued' ? '#4CAF50' : '#2196F3' }
+                        ]} />
+                        <Text style={styles.legendText}>{dataset.label}</Text>
+                    </View>
+                ))}
+            </View>
         </View>
     );
 }
@@ -117,11 +97,28 @@ const styles = StyleSheet.create({
         marginVertical: 8,
         borderRadius: 8
     },
-    description: {
+    legend: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 12,
+        gap: 16
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6
+    },
+    legendColor: {
+        width: 12,
+        height: 12,
+        borderRadius: 2
+    },
+    legendText: {
         fontSize: 12,
-        color: '#666',
-        marginTop: 8,
-        textAlign: 'center',
-        lineHeight: 18
+        color: '#666'
     }
 });
+
+// REFERENCES
+// react-native-chart-kit. (2024). LineChart Documentation. Retrieved from github.com/indiespirit/react-native-chart-kit
+// React Native. (2025). Dimensions. Retrieved from reactnative.dev/docs/dimensions

@@ -1,6 +1,6 @@
 // Main analytics view component
-// Displays metrics, AI chart generation, and chat interface
-// TODO REFERENCE AND COMMENT!!!
+// Displays metrics cards, period toggle, chart, and AI chat interface
+
 import React, { useState } from 'react';
 import {
     View,
@@ -8,26 +8,45 @@ import {
     Text,
     StyleSheet,
     ActivityIndicator,
-    RefreshControl
+    RefreshControl,
+    TouchableOpacity
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useAnalyticsChart } from '@/hooks/useAnalyticsChart';
 import { useAnalyticsChat } from '@/hooks/useAnalyticsChat';
-import { analyticsService } from '@/services/analyticsService';
-import GenerateChartButton from './GenerateChartButton';
 import Chart from './Chart';
 import ChatSection from './AIChat';
-import type { ChartConfig } from '@/services/types';
-import MetricCard from "@/components/Analytics/MetricCard";
+import MetricCard from './MetricCard';
 
 const BRANCH_ID = '03a897a0-e271-4174-aed2-d283a888dbae';
 
 export function AnalyticsView() {
-    const { metrics, loading, error, fetchMetrics } = useAnalytics(BRANCH_ID, 30);
-    const { messages, loading: chatLoading, askQuestion } = useAnalyticsChat(BRANCH_ID, 30);
+    // Analytics hook manages period state
+    const {
+        metrics,
+        loading,
+        error,
+        fetchMetrics,
+        periodType,
+        setPeriodType,
+        referenceDate
+    } = useAnalytics(BRANCH_ID);
 
-    const [chartConfig, setChartConfig] = useState<ChartConfig | null>(null);
-    const [generatingChart, setGeneratingChart] = useState(false);
+    // Chart hook uses same period state
+    const { chart, loading: chartLoading } = useAnalyticsChart(
+        BRANCH_ID,
+        periodType,
+        referenceDate
+    );
+
+    // Chat hook uses same period state
+    const { messages, loading: chatLoading, askQuestion } = useAnalyticsChat(
+        BRANCH_ID,
+        periodType,
+        referenceDate
+    );
+
     const [question, setQuestion] = useState('');
 
     useFocusEffect(
@@ -35,18 +54,6 @@ export function AnalyticsView() {
             void fetchMetrics();
         }, [])
     );
-
-    const handleGenerateChart = async () => {
-        setGeneratingChart(true);
-        try {
-            const response = await analyticsService.generateChart(BRANCH_ID, 30);
-            setChartConfig(response.chart_config);
-        } catch (e) {
-            console.error('Failed to generate chart:', e);
-        } finally {
-            setGeneratingChart(false);
-        }
-    };
 
     const handleAskQuestion = async () => {
         if (!question.trim()) return;
@@ -89,27 +96,82 @@ export function AnalyticsView() {
                 />
             }
         >
+            {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Waste Tracking</Text>
                 <Text style={styles.headerSubtitle}>
-                    Last {metrics.period.days} days
+                    {metrics.period.label}
                 </Text>
             </View>
-            <View style={styles.metricsContainer}>
-            <MetricCard title="ITEMS LISTED" value={metrics.total_items_listed} />
-            <MetricCard title="ITEMS RESCUED" value={metrics.total_items_rescued} />
-            <MetricCard title="RESCUE RATE" value={`${metrics.rescue_rate}%`} />
-            <MetricCard title="TOTAL LISTINGS" value={metrics.listings_count} />
-            <MetricCard title="COMPLETED PICKUPS" value={metrics.pickups_completed} />
+
+            {/* Period Toggle Buttons */}
+            <View style={styles.periodToggle}>
+                <TouchableOpacity
+                    style={[
+                        styles.periodButton,
+                        periodType === 'week' && styles.periodButtonActive
+                    ]}
+                    onPress={() => setPeriodType('week')}
+                >
+                    <Text style={[
+                        styles.periodButtonText,
+                        periodType === 'week' && styles.periodButtonTextActive
+                    ]}>
+                        Week
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[
+                        styles.periodButton,
+                        periodType === 'month' && styles.periodButtonActive
+                    ]}
+                    onPress={() => setPeriodType('month')}
+                >
+                    <Text style={[
+                        styles.periodButtonText,
+                        periodType === 'month' && styles.periodButtonTextActive
+                    ]}>
+                        Month
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[
+                        styles.periodButton,
+                        periodType === 'year' && styles.periodButtonActive
+                    ]}
+                    onPress={() => setPeriodType('year')}
+                >
+                    <Text style={[
+                        styles.periodButtonText,
+                        periodType === 'year' && styles.periodButtonTextActive
+                    ]}>
+                        Year
+                    </Text>
+                </TouchableOpacity>
             </View>
 
-            <GenerateChartButton
-                onPress={handleGenerateChart}
-                loading={generatingChart}
-            />
+            {/* Metrics Cards */}
+            <View style={styles.metricsContainer}>
+                <MetricCard title="ITEMS LISTED" value={metrics.total_items_listed} />
+                <MetricCard title="ITEMS RESCUED" value={metrics.total_items_rescued} />
+                <MetricCard title="RESCUE RATE" value={`${metrics.rescue_rate}%`} />
+                <MetricCard title="TOTAL LISTINGS" value={metrics.listings_count} />
+                <MetricCard title="COMPLETED PICKUPS" value={metrics.pickups_completed} />
+            </View>
 
-            {chartConfig && <Chart chartConfig={chartConfig} />}
+            {/* Chart */}
+            {chartLoading ? (
+                <View style={styles.chartLoading}>
+                    <ActivityIndicator size="large" color="#4CAF50" />
+                    <Text style={styles.loadingText}>Loading chart...</Text>
+                </View>
+            ) : chart ? (
+                <Chart chart={chart} />
+            ) : null}
 
+            {/* AI Chat */}
             <ChatSection
                 messages={messages}
                 question={question}
@@ -153,10 +215,40 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666'
     },
+    periodToggle: {
+        flexDirection: 'row',
+        padding: 16,
+        gap: 8
+    },
+    periodButton: {
+        flex: 1,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        alignItems: 'center'
+    },
+    periodButtonActive: {
+        backgroundColor: '#4CAF50',
+        borderColor: '#4CAF50'
+    },
+    periodButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#666'
+    },
+    periodButtonTextActive: {
+        color: '#fff'
+    },
     metricsContainer: {
         padding: 16
     },
-
+    chartLoading: {
+        padding: 40,
+        alignItems: 'center'
+    },
     loadingText: {
         marginTop: 12,
         fontSize: 16,
@@ -181,3 +273,9 @@ const styles = StyleSheet.create({
         color: '#999'
     }
 });
+
+// REFERENCES
+// React Native. (2025). TouchableOpacity. Retrieved from reactnative.dev/docs/touchableopacity
+// React Native. (2025). View. Retrieved from reactnative.dev/docs/view
+// React Native. (2025). ScrollView. Retrieved from reactnative.dev/docs/scrollview
+// React Native. (2025). StyleSheet. Retrieved from reactnative.dev/docs/stylesheet
