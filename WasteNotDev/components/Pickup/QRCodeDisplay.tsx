@@ -108,7 +108,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
       {/* Items */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
-          📦 Items ({totalItems} {totalItems === 1 ? 'item' : 'items'})
+          Items ({totalItems} {totalItems === 1 ? 'item' : 'items'})
         </Text>
         <View style={styles.card}>
           {qrData.items.map((item, index) => (
@@ -147,11 +147,6 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         </View>
       )}
 
-      {onBack && (
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>Back to Claims</Text>
-        </TouchableOpacity>
-      )}
     </ScrollView>
   );
 };

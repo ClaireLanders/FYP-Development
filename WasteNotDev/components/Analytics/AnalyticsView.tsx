@@ -117,7 +117,7 @@ export function AnalyticsView() {
                         styles.periodButtonText,
                         periodType === 'day' && styles.periodButtonTextActive
                     ]}>
-                        Week
+                        Today
                     </Text>
                 </TouchableOpacity>
 
@@ -130,9 +130,9 @@ export function AnalyticsView() {
                 >
                     <Text style={[
                         styles.periodButtonText,
-                        periodType === 'day' && styles.periodButtonTextActive
+                        periodType === 'week' && styles.periodButtonTextActive
                     ]}>
-                        Week
+                        This Week
                         </Text>
 
                 </TouchableOpacity>
@@ -149,7 +149,7 @@ export function AnalyticsView() {
                         styles.periodButtonText,
                         periodType === 'month' && styles.periodButtonTextActive
                     ]}>
-                        Month
+                        This Month
                     </Text>
                 </TouchableOpacity>
 
@@ -164,7 +164,7 @@ export function AnalyticsView() {
                         styles.periodButtonText,
                         periodType === 'year' && styles.periodButtonTextActive
                     ]}>
-                        Year
+                       This Year
                     </Text>
                 </TouchableOpacity>
             </View>

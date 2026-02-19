@@ -115,7 +115,7 @@ export const MyPickupsList: React.FC = () => {
               </View>
               <View style={styles.statusBadge}>
                 <Text style={styles.statusText}>
-                  {item.complete ? '✓ PICKED UP' : '✓ APPROVED'}
+                  {item.complete ? 'PICKED UP' : 'APPROVED'}
                 </Text>
               </View>
             </View>

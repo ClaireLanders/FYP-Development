@@ -39,6 +39,7 @@ export const useAnalytics = (branchID: string) => {
         error,
         fetchMetrics,
         setPeriodType,
+        periodType,
         referenceDate,
         setReferenceDate
     };
