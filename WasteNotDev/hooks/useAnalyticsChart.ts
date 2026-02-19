@@ -6,16 +6,22 @@ import { useState, useEffect } from 'react';
 import { analyticsService } from '@/services/analyticsService';
 import type { Chart } from '@/services/types';
 
-export const useAnalyticsChart = (branchId: string, periodType: string = 'month', referenceDate?: string) => {
+export const useAnalyticsChart = (branchID: string, periodType: string = 'month', referenceDate?: string) => {
   const [chart, setChart] = useState<Chart | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchChart = async (): Promise<void> => {
+    // will not fetch chart data for today
+     if (periodType === 'day') {
+      setChart(null);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
-      const response = await analyticsService.getChart(branchId, periodType, referenceDate);
+      const response = await analyticsService.getChart(branchID, periodType, referenceDate);
       setChart(response.chart);
     } catch (err: any) {
       setError(err.message || 'Failed to load chart');
@@ -28,7 +34,7 @@ export const useAnalyticsChart = (branchId: string, periodType: string = 'month'
   // Fetching chart when branch, period type, or reference date changes
   useEffect(() => {
     void fetchChart();
-  }, [branchId, periodType, referenceDate]);
+  }, [branchID, periodType, referenceDate]);
 
   return {
     chart,

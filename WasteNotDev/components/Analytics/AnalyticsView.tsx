@@ -1,5 +1,5 @@
 // Main analytics view component
-// Displays metrics cards, period toggle, chart, and AI chat interface
+// Displays metrics cards, time period toggle, chart, and AI chat interface
 
 import React, { useState } from 'react';
 import {
@@ -40,7 +40,7 @@ export function AnalyticsView() {
         referenceDate
     );
 
-    // Chat hook uses same period state
+    // Chat hook uses period type and reference date from analytics hook
     const { messages, loading: chatLoading, askQuestion } = useAnalyticsChat(
         BRANCH_ID,
         periodType,
@@ -56,7 +56,7 @@ export function AnalyticsView() {
     );
 
     const handleAskQuestion = async () => {
-        if (!question.trim()) return;
+        if (!question) return;
         await askQuestion(question);
         setQuestion('');
     };
@@ -109,17 +109,34 @@ export function AnalyticsView() {
                 <TouchableOpacity
                     style={[
                         styles.periodButton,
-                        periodType === 'week' && styles.periodButtonActive
+                        periodType === 'day' && styles.periodButtonActive
                     ]}
-                    onPress={() => setPeriodType('week')}
+                    onPress={() => setPeriodType('day')}
                 >
                     <Text style={[
                         styles.periodButtonText,
-                        periodType === 'week' && styles.periodButtonTextActive
+                        periodType === 'day' && styles.periodButtonTextActive
                     ]}>
                         Week
                     </Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                    style ={[
+                        styles.periodButton,
+                        periodType === 'week' && styles.periodButtonActive
+                    ]}
+                    onPress={() => setPeriodType('week') }
+                >
+                    <Text style={[
+                        styles.periodButtonText,
+                        periodType === 'day' && styles.periodButtonTextActive
+                    ]}>
+                        Week
+                        </Text>
+
+                </TouchableOpacity>
+
 
                 <TouchableOpacity
                     style={[
@@ -162,14 +179,16 @@ export function AnalyticsView() {
             </View>
 
             {/* Chart */}
-            {chartLoading ? (
-                <View style={styles.chartLoading}>
-                    <ActivityIndicator size="large" color="#4CAF50" />
-                    <Text style={styles.loadingText}>Loading chart...</Text>
-                </View>
-            ) : chart ? (
-                <Chart chart={chart} />
-            ) : null}
+            {periodType !== 'day' && (
+                chartLoading ? (
+                    <View style={styles.chartLoading}>
+                        <ActivityIndicator size="large" color="#4CAF50" />
+                        <Text style={styles.loadingText}>Loading chart...</Text>
+                    </View>
+                ) : chart ? (
+                    <Chart chart={chart} />
+                ) : null
+            )}
 
             {/* AI Chat */}
             <ChatSection
