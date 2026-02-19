@@ -1,6 +1,6 @@
 // Custom hook for analytics chart data
 // Fetches chart visualisation data based on period type
-// Automatically updates when period changes
+// Automatically updates when time period changes
 
 import { useState, useEffect } from 'react';
 import { analyticsService } from '@/services/analyticsService';
@@ -12,12 +12,13 @@ export const useAnalyticsChart = (branchID: string, periodType: string = 'month'
   const [error, setError] = useState<string | null>(null);
 
   const fetchChart = async (): Promise<void> => {
-    // will not fetch chart data for today
-     if (periodType === 'day') {
+    // Skip chart fetch for day period
+    if (periodType === 'day') {
       setChart(null);
       setLoading(false);
       return;
     }
+
     try {
       setLoading(true);
       setError(null);
@@ -43,3 +44,7 @@ export const useAnalyticsChart = (branchID: string, periodType: string = 'month'
     fetchChart
   };
 };
+
+// REFERENCES
+// React. (2025). useState Hook. Retrieved from react.dev/reference/react/useState
+// React. (2025). useEffect Hook. Retrieved from react.dev/reference/react/useEffect

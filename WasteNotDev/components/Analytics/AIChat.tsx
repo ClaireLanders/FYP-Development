@@ -1,7 +1,6 @@
 // AI Chat interface component for asking questions about analytics
 import React from 'react';
-import { View,Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
-    KeyboardAvoidingView, Platform, ScrollView} from 'react-native';
+import { View,Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView} from 'react-native';
 import type { ChatMessage } from '@/services/types';
 
 interface AIChatProps {
@@ -37,38 +36,33 @@ export default function AIChat({
                 ))}
             </ScrollView>
 
-            {/* input section wrapped in keyoboard avoiding view : android uses 'height' and ios uses 'padding'
-             also using keyboard vertical offset to account for hte headers and buttons. Found from this source */}
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={100}
-            >
-                <View style={styles.inputContainer}>
-                    <TextInput
-                        style={styles.input}
-                        value={question}
-                        onChangeText={onQuestionChange}
-                        placeholder="Ask a question about your data..."
-                        placeholderTextColor="#999"
-                        multiline
-                        editable={!loading}
-                    />
-                    <TouchableOpacity
-                        style={[
-                            styles.sendButton,
-                            (!question.trim() || loading) && styles.sendButtonDisabled
-                        ]}
-                        onPress={onSend}
-                        disabled={!question.trim() || loading}
-                    >
-                        {loading ? (
-                            <ActivityIndicator color="#fff" size="small" />
-                        ) : (
-                            <Text style={styles.sendButtonText}>Send</Text>
-                        )}
-                    </TouchableOpacity>
-                </View>
-                </KeyboardAvoidingView>
+            {/* input section */}
+
+            <View style={styles.inputContainer}>
+                <TextInput
+                    style={styles.input}
+                    value={question}
+                    onChangeText={onQuestionChange}
+                    placeholder="Ask a question about your data..."
+                    placeholderTextColor="#999"
+                    multiline
+                    editable={!loading}
+                />
+                <TouchableOpacity
+                    style={[
+                        styles.sendButton,
+                        (!question.trim() || loading) && styles.sendButtonDisabled
+                    ]}
+                    onPress={onSend}
+                    disabled={!question.trim() || loading}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                        <Text style={styles.sendButtonText}>Send</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
         </View>
     );
 }
@@ -152,6 +146,4 @@ const styles = StyleSheet.create({
 });
 
 
-// REFERENCES - TODO: CHANGE !!
-// React Native. (2025). KeyboardAvoidingView. Retrieved from reactnative.dev/docs/keyboardavoidingview
-// React Native. (2025). Platform. Retrieved from reactnative.dev/docs/platform
+

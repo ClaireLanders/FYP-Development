@@ -9,7 +9,9 @@ import {
     StyleSheet,
     ActivityIndicator,
     RefreshControl,
-    TouchableOpacity
+    TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -39,6 +41,8 @@ export function AnalyticsView() {
         periodType,
         referenceDate
     );
+    // logs to check chart issue
+    console.log('AnalyticsView periodType:', periodType);
 
     // Chat hook uses period type and reference date from analytics hook
     const { messages, loading: chatLoading, askQuestion } = useAnalyticsChat(
@@ -87,122 +91,128 @@ export function AnalyticsView() {
     }
 
     return (
-        <ScrollView
+        <KeyboardAvoidingView
             style={styles.container}
-            refreshControl={
-                <RefreshControl
-                    refreshing={loading}
-                    onRefresh={fetchMetrics}
-                />
-            }
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
         >
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Waste Tracking</Text>
-                <Text style={styles.headerSubtitle}>
-                    {metrics.period.label}
-                </Text>
-            </View>
-
-            {/* Period Toggle Buttons */}
-            <View style={styles.periodToggle}>
-                <TouchableOpacity
-                    style={[
-                        styles.periodButton,
-                        periodType === 'day' && styles.periodButtonActive
-                    ]}
-                    onPress={() => setPeriodType('day')}
-                >
-                    <Text style={[
-                        styles.periodButtonText,
-                        periodType === 'day' && styles.periodButtonTextActive
-                    ]}>
-                        Today
+            <ScrollView
+                style={styles.container}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={loading}
+                        onRefresh={fetchMetrics}
+                    />
+                }
+            >
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Waste Tracking</Text>
+                    <Text style={styles.headerSubtitle}>
+                        {metrics.period.label}
                     </Text>
-                </TouchableOpacity>
+                </View>
 
-                <TouchableOpacity
-                    style ={[
-                        styles.periodButton,
-                        periodType === 'week' && styles.periodButtonActive
-                    ]}
-                    onPress={() => setPeriodType('week') }
-                >
-                    <Text style={[
-                        styles.periodButtonText,
-                        periodType === 'week' && styles.periodButtonTextActive
-                    ]}>
-                        This Week
+                {/* Period Toggle Buttons */}
+                <View style={styles.periodToggle}>
+                    <TouchableOpacity
+                        style={[
+                            styles.periodButton,
+                            periodType === 'day' && styles.periodButtonActive
+                        ]}
+                        onPress={() => setPeriodType('day')}
+                    >
+                        <Text style={[
+                            styles.periodButtonText,
+                            periodType === 'day' && styles.periodButtonTextActive
+                        ]}>
+                            Today
                         </Text>
+                    </TouchableOpacity>
 
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        style ={[
+                            styles.periodButton,
+                            periodType === 'week' && styles.periodButtonActive
+                        ]}
+                        onPress={() => setPeriodType('week') }
+                    >
+                        <Text style={[
+                            styles.periodButtonText,
+                            periodType === 'week' && styles.periodButtonTextActive
+                        ]}>
+                            This Week
+                            </Text>
+
+                    </TouchableOpacity>
 
 
-                <TouchableOpacity
-                    style={[
-                        styles.periodButton,
-                        periodType === 'month' && styles.periodButtonActive
-                    ]}
-                    onPress={() => setPeriodType('month')}
-                >
-                    <Text style={[
-                        styles.periodButtonText,
-                        periodType === 'month' && styles.periodButtonTextActive
-                    ]}>
-                        This Month
-                    </Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[
+                            styles.periodButton,
+                            periodType === 'month' && styles.periodButtonActive
+                        ]}
+                        onPress={() => setPeriodType('month')}
+                    >
+                        <Text style={[
+                            styles.periodButtonText,
+                            periodType === 'month' && styles.periodButtonTextActive
+                        ]}>
+                            This Month
+                        </Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[
-                        styles.periodButton,
-                        periodType === 'year' && styles.periodButtonActive
-                    ]}
-                    onPress={() => setPeriodType('year')}
-                >
-                    <Text style={[
-                        styles.periodButtonText,
-                        periodType === 'year' && styles.periodButtonTextActive
-                    ]}>
-                       This Year
-                    </Text>
-                </TouchableOpacity>
-            </View>
+                    <TouchableOpacity
+                        style={[
+                            styles.periodButton,
+                            periodType === 'year' && styles.periodButtonActive
+                        ]}
+                        onPress={() => setPeriodType('year')}
+                    >
+                        <Text style={[
+                            styles.periodButtonText,
+                            periodType === 'year' && styles.periodButtonTextActive
+                        ]}>
+                           This Year
+                        </Text>
+                    </TouchableOpacity>
+                </View>
 
-            {/* Metrics Cards */}
-            <View style={styles.metricsContainer}>
-                <MetricCard title="ITEMS LISTED" value={metrics.total_items_listed} />
-                <MetricCard title="ITEMS RESCUED" value={metrics.total_items_rescued} />
-                <MetricCard title="RESCUE RATE" value={`${metrics.rescue_rate}%`} />
-                <MetricCard title="TOTAL LISTINGS" value={metrics.listings_count} />
-                <MetricCard title="COMPLETED PICKUPS" value={metrics.pickups_completed} />
-            </View>
+                {/* Metrics Cards */}
+                <View style={styles.metricsContainer}>
+                    <MetricCard title="ITEMS LISTED" value={metrics.total_items_listed} />
+                    <MetricCard title="ITEMS RESCUED" value={metrics.total_items_rescued} />
+                    <MetricCard title="RESCUE RATE" value={`${metrics.rescue_rate}%`} />
+                    <MetricCard title="TOTAL LISTINGS" value={metrics.listings_count} />
+                    <MetricCard title="COMPLETED PICKUPS" value={metrics.pickups_completed} />
+                </View>
 
-            {/* Chart */}
-            {periodType !== 'day' && (
-                chartLoading ? (
-                    <View style={styles.chartLoading}>
-                        <ActivityIndicator size="large" color="#4CAF50" />
-                        <Text style={styles.loadingText}>Loading chart...</Text>
-                    </View>
-                ) : chart ? (
-                    <Chart chart={chart} />
-                ) : null
-            )}
+                {/* Chart */}
+                {periodType !== 'day' && (
+                    chartLoading ? (
+                        <View style={styles.chartLoading}>
+                            <ActivityIndicator size="large" color="#4CAF50" />
+                            <Text style={styles.loadingText}>Loading chart...</Text>
+                        </View>
+                    ) : chart ? (
+                        <Chart chart={chart} />
+                    ) : null
+                )}
 
-            {/* AI Chat */}
-            <ChatSection
-                messages={messages}
-                question={question}
-                onQuestionChange={setQuestion}
-                onSend={handleAskQuestion}
-                loading={chatLoading}
-            />
+                {/* AI Chat */}
+                <ChatSection
+                    messages={messages}
+                    question={question}
+                    onQuestionChange={setQuestion}
+                    onSend={handleAskQuestion}
+                    loading={chatLoading}
+                />
 
-            <View style={styles.footer}>
-                <Text style={styles.footerText}>Pull down to refresh</Text>
-            </View>
-        </ScrollView>
+                <View style={styles.footer}>
+                    <Text style={styles.footerText}>Pull down to refresh</Text>
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 }
 
