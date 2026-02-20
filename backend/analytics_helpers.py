@@ -1,15 +1,12 @@
-# analytics_helpers.py
-# Helper functions for analytics chart generation
-# Sources: PostgreSQL date/time functions, Chart.js data structures
+# Helper functions for generating chart data for the analytics feature in user story 8
+# COALESCE used to return 0 for periods with no data (W3Schools, 2025)
+# Date arithmetic uses Python datetime and calendar modules (Gupta, R., 2025)
 
 from datetime import datetime, timedelta
 import calendar
 
 
-# ============================================================================
 # WEEK CHART
-# Shows daily breakdown of this week (Mon-Sun)
-# ============================================================================
 
 def generate_week_chart(cur, branch_id, ref, start_date, end_date):
     """
@@ -86,10 +83,9 @@ def generate_week_chart(cur, branch_id, ref, start_date, end_date):
     }
 
 
-# ============================================================================
+
 # MONTH CHART
-# Shows weekly breakdown of this month
-# ============================================================================
+
 
 def generate_month_chart(cur, branch_id, ref, start_date, end_date):
     """
@@ -181,10 +177,8 @@ def generate_month_chart(cur, branch_id, ref, start_date, end_date):
     }
 
 
-# ============================================================================
+
 # YEAR CHART
-# Shows monthly breakdown of this year (Jan-Dec)
-# ============================================================================
 
 def generate_year_chart(cur, branch_id, ref, start_date, end_date):
     """
@@ -238,7 +232,7 @@ def generate_year_chart(cur, branch_id, ref, start_date, end_date):
         (branch_id, start_date, end_date)
     )
 
-    # Fill in data from query results
+    # Filling in data from query results
     for row in cur.fetchall():
         month_num = int(row[0])
         rescued_by_month[month_num - 1] = int(row[1])

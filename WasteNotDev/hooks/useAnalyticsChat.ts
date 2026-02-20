@@ -1,6 +1,9 @@
-// Custom hook for analytics chat functionality
-// Manages chat messages, loading states, and API calls
-// AI receives context for the current period being viewed
+// Custom React hook for the AI analytics chat feature
+// Manages message history (question + answer pairs), loading state, and error state.
+// Each question is sent with the current period context so the AI answer is relevant.
+// Messages accumulate in state for the duration of the session.
+// React useState: (React, 2025)
+// analyticsService.askQuestion() calls the OpenAI-backed backend endpoint (OpenAI, 2025)
 
 import { useState } from 'react';
 import { analyticsService } from '@/services/analyticsService';

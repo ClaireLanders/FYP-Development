@@ -1,6 +1,11 @@
-// Chart display component
-// Renders charts using react-native-chart-kit
-// Displays breakdown by period (daily/weekly/monthly)
+// Chart.tsx
+// Displays a line chart of items listed vs items rescued for the selected period (US8).
+// Uses react-native-chart-kit LineChart
+// Chart data (labels + datasets) is passed in from AnalyticsView via useAnalyticsChart.
+// Chart width is set dynamically using Dimensions.get('window').width.
+// react-native-chart-kit LineChart: (react-native-chart-kit, 2024)
+// React Native Dimensions: (React Native, 2025)
+// React Native StyleSheet: (React Native, 2026)
 
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
@@ -119,6 +124,3 @@ const styles = StyleSheet.create({
     }
 });
 
-// REFERENCES
-// react-native-chart-kit. (2024). LineChart Documentation. Retrieved from github.com/indiespirit/react-native-chart-kit
-// React Native. (2025). Dimensions. Retrieved from reactnative.dev/docs/dimensions

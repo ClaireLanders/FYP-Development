@@ -1,5 +1,6 @@
 # this file contains QR code generation utilities so the pickup can be verified
-# this code is adapted from a Youtube tutorial (ProgrammingKnowledge, 2025)
+# QR code generation adapted from (ProgrammingKnowledge, 2025)
+# Secure token generation uses Python secrets module (Python, 2026)
 
 import qrcode
 import io

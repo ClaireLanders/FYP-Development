@@ -1,4 +1,10 @@
-// AI Chat interface component for asking questions about analytics
+// Presentational component for the AI analytics chat interface
+// Renders a scrollable message history and a text input with a send button.
+// Accepts all state and handlers as props from AnalyticsView.
+//
+// React Native TextInput, TouchableOpacity, ScrollView: (React Native, 2025)
+// React Native StyleSheet: (React Native, 2026)
+// React Native ActivityIndicator used to show loading state while awaiting AI response.
 import React from 'react';
 import { View,Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView} from 'react-native';
 import type { ChatMessage } from '@/services/types';

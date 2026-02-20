@@ -1,5 +1,14 @@
-// Main analytics view component
-// Displays metrics cards, time period toggle, chart, and AI chat interface
+// AnalyticsView.tsx
+// Main analytics screen component combining all analytics sub-components (US7 & US8).
+// Uses three custom hooks: useAnalytics (metrics), useAnalyticsChart (chart),
+// useAnalyticsChat (AI chat). Period state is controlled in useAnalytics and passed down.
+// KeyboardAvoidingView used to prevent the keyboard from covering the AI chat input.
+// Platform-specific padding applied for iOS vs Android keyboard behaviour.
+// React Native KeyboardAvoidingView: (React Native, 2025)
+// React Native Platform: (React Native, 2025)
+// React Navigation useFocusEffect: (React Navigation, 2025)
+// React Native ScrollView: (React Native, 2025)
+// React Native StyleSheet: (React Native, 2026)
 
 import React, { useState } from 'react';
 import {
@@ -50,7 +59,9 @@ export function AnalyticsView() {
     );
 
     const [question, setQuestion] = useState('');
-
+    // useFocusEffect re-fetches metrics every time the user navigates back to this tab.
+    // This ensures data is fresh without polling.
+    // (React Navigation, 2025)
     useFocusEffect(
         React.useCallback(() => {
             void fetchMetrics();
@@ -317,8 +328,3 @@ const styles = StyleSheet.create({
     },
 });
 
-// REFERENCES
-// React Native. (2025). TouchableOpacity. Retrieved from reactnative.dev/docs/touchableopacity
-// React Native. (2025). View. Retrieved from reactnative.dev/docs/view
-// React Native. (2025). ScrollView. Retrieved from reactnative.dev/docs/scrollview
-// React Native. (2025). StyleSheet. Retrieved from reactnative.dev/docs/stylesheet

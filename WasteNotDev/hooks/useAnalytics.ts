@@ -1,6 +1,9 @@
-// Custom hook for analytics data
-// Manages metrics, loading states, and time period selection
-// Supports week, month, and year views
+// Custom React hook for fetching and managing analytics metrics (US7 & US8).
+// Manages: metrics data, loading state, error state, and time period selection.
+// Period types supported: day, week, month, year.
+// Re-fetches automatically when branchID, periodType, or referenceDate changes.
+// React useState: (React Native, 2025)
+// React useEffect: (React Native, 2025)
 
 import { useState, useEffect } from 'react';
 import { analyticsService} from '@/services/analyticsService'
@@ -45,5 +48,3 @@ export const useAnalytics = (branchID: string) => {
     };
 };
 
-// References
-// TODO: add some !!

@@ -1,6 +1,8 @@
-// Custom hook for analytics chart data
-// Fetches chart visualisation data based on period type
-// Automatically updates when time period changes
+// Custom React hook for fetching chart visualisation data (US8).
+// Skips the API call when periodType === 'day' (no chart shown for single-day view).
+// Automatically re-fetches when branchID, periodType, or referenceDate changes.
+// React useState: (React Native, 2025)
+// React useEffect: (React Native, 2025)
 
 import { useState, useEffect } from 'react';
 import { analyticsService } from '@/services/analyticsService';

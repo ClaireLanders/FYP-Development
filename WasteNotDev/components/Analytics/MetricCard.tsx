@@ -1,6 +1,9 @@
-// description
-// references as i go
-// TODO: compare to in-class one, references, description
+// MetricCard.tsx
+// Reusable card component for displaying a single analytics metric (US7 & US8).
+// Accepts a title (e.g. "ITEMS RESCUED") and a value (number or string).
+// Numbers are formatted with toLocaleString() for readability.
+// React Native StyleSheet: (React Native, 2026)
+// React Native View, Text: (React Native, 2025)
 
 
 import React from 'react';
@@ -22,7 +25,7 @@ export default function MetricCard({title, value}: MetricCardProps){
     );
 }
 
-// TODO: SIMPLIFY !!
+
 
 const styles = StyleSheet.create({
     card: {
@@ -69,5 +72,4 @@ const styles = StyleSheet.create({
     }
 });
 
-// References
-// React Native. (2025). StyleSheet. Retrieved from reactnative.dev
+

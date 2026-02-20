@@ -1,8 +1,9 @@
-// Analytics screen - View waste tracking metrics and AI-powered insights
-// This screen renders the AnalyticsView component which displays metrics,
-// AI-generated charts, and chat interface for data questions
-// Store owners use this screen to track their food rescue performance
-
+// Tab screen entry point for the analytics feature (US7 & US8).
+// Renders the AnalyticsView component which handles all metrics, charts,
+// and AI chat functionality.
+//
+// React Native StyleSheet: (React Native, 2026)
+// Expo navigation tab: (Expo, 2024)
 import { StyleSheet } from 'react-native';
 import { AnalyticsView } from '@/components/Analytics/AnalyticsView';
 

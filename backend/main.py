@@ -1,6 +1,8 @@
-# This is the main backend python file for WasteNot
-# This code is adapted from video "how to create a Fast APi & React Project" (Tech With Tim, 2024)
-# The database interactions for this code were adapted from (NeuralNine, 2025)
+# Main backend entry point for the WasteNot application.
+# Defines all FastAPI endpoints, Pydantic data models, and database interactions
+# This code is adapted from video "how to create a Fast APi & React Project" (Tech With Tim, 2024) for FastAPI project structure, route definitions,
+# and Pydantic model usage.
+# Database interactions follow patterns from (NeuralNine, 2023).
 # My own database and models were used, the video acted as a guide to understand the imports, models and endpoints
 
 
@@ -24,8 +26,10 @@ from analytics_helpers import generate_week_chart, generate_month_chart, generat
 # Loading environment variables from .env file
 load_dotenv()
 
-# Setting up Open AI API
-#  (Isa AI Developer, 2025)
+# OpenAI client setup
+# Setting up OpenAI API client for the AI analytics chat feature (US8)
+# API key is loaded securely from the .env file
+# Adapted from (Isa AI Developer, 2025)
 api_key = os.getenv("OPENAI_API_KEY")
 openai_client = OpenAI(api_key=api_key)
 
@@ -658,6 +662,8 @@ def get_pending_claims(
         return result
 
 # Approving Claims
+# Approves a claim and generates a secure QR token for pickup.
+# Token generated via generate_secure_token() from utils/qr_code.py (Python, 2026)
 @app.post("/claims/approve", response_model=ApproveClaimResponse)
 def approve_claim(payload: ApproveClaimRequest, conn=Depends(get_conn)):
     # Approving a claim, automatically generating a QR code for pickup
@@ -748,6 +754,8 @@ def approve_claim(payload: ApproveClaimRequest, conn=Depends(get_conn)):
             )
 
 # Get QR code
+# Fetches the QR code for an approved claim.
+# QR code image is generated via generate_qr_code() utility (ProgrammingKnowledge, 2025)
 @app.get("/pickup/qr/{claim_id}")
 def get_pickup_qr(
         claim_id: str,
@@ -1128,6 +1136,8 @@ def get_approved_awaiting_pickup(
 # Getting the basic waste tracking metric for a shop
 # uses calenar-based periods (day, week, month, year) for accurate dat ranges
 # Returns the total items listed + rescued, the rescue rate, no.of listings, no. of complete pickups
+# Date/time calculations adapted from Python datetime and calendar modules (Gupta, R., 2025)
+# COALESCE used to return 0 instead of NULL for branches with no data (W3Schools, 2025)
 @app.get("/analytics/basic-metrics")
 def get_basic_metrics(
         branch_id: str,
@@ -1234,7 +1244,9 @@ def get_basic_metrics(
         }
 
 # Analytics chart
-# Returns chart data for analytics visualisation based on period type
+# Returns chart data (labels + datasets) for the given period.
+# Chart generation is delegated to helper functions in analytics_helpers.py.
+# Date range logic adapted from Python datetime module (Gupta, R., 2025)
 @app.get("/analytics/chart")
 def get_period_chart(
         branch_id: str,
@@ -1292,8 +1304,10 @@ def get_period_chart(
 
 
 # Analytics chat endpoint
-# Allows store owners to ask questions about their analytics data
-# Uses OpenAI GPT-4 to generate insights
+# AI chat endpoint allowing store owners to ask questions about their analytics data.
+# Retrieves current metrics from get_basic_metrics() and passes them as context to GPT-4o-mini.
+# OpenAI API call adapted from (Tech With Tim, 2023) and (Isa AI Developer, 2025)
+# OpenAI Chat Completions API: (OpenAI, 2025)
 @app.post("/analytics/chat")
 def analytics_chat(payload:AnalyticsChatRequest, conn=Depends(get_conn)):
     # Getting current analytics data for context
@@ -1305,8 +1319,8 @@ def analytics_chat(payload:AnalyticsChatRequest, conn=Depends(get_conn)):
         conn=conn
     )
     # Building context for the AI using the metrics (SOURCE)
-    # this was adapted from SOURCE TODO: SOURCE !!
-    # Adapted from OpenAI Chat Completions documentation (OpenAI, 2024) ?? todo:correct??
+    # Building a structured prompt with current metrics so the AI gives relevant answers.
+    # Approach to injecting data context into prompts adapted from (Tech With Tim, 2023)
     data_context = f"""
     You are an AI assistant for a food rescue platform called WasteNot.
     Current period: {metrics['period']['label']}
