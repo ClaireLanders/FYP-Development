@@ -41,8 +41,6 @@ export function AnalyticsView() {
         periodType,
         referenceDate
     );
-    // logs to check chart issue
-    console.log('AnalyticsView periodType:', periodType);
 
     // Chat hook uses period type and reference date from analytics hook
     const { messages, loading: chatLoading, askQuestion } = useAnalyticsChat(
@@ -64,6 +62,8 @@ export function AnalyticsView() {
         await askQuestion(question);
         setQuestion('');
     };
+
+
 
     if (loading && !metrics) {
         return (
@@ -94,10 +94,13 @@ export function AnalyticsView() {
         <KeyboardAvoidingView
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
             <ScrollView
-                style={styles.container}
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+
+
                 refreshControl={
                     <RefreshControl
                         refreshing={loading}
@@ -207,7 +210,7 @@ export function AnalyticsView() {
                     onSend={handleAskQuestion}
                     loading={chatLoading}
                 />
-
+                <View style={styles.bottomSpacer} />
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>Pull down to refresh</Text>
                 </View>
@@ -300,7 +303,18 @@ const styles = StyleSheet.create({
     footerText: {
         fontSize: 12,
         color: '#999'
-    }
+    },
+    scrollView: {
+        flex: 1
+    },
+
+    scrollContent: {
+        flexGrow: 1,
+        paddingBottom: Platform.OS === 'ios' ? 100: 0 //this gives extra space for ios versions
+    },
+    bottomSpacer: {
+        height: Platform.OS === 'ios' ? 100 : 0
+    },
 });
 
 // REFERENCES

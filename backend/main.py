@@ -21,17 +21,12 @@ from analytics_helpers import generate_week_chart, generate_month_chart, generat
 
 
 
-# Loading environment variables from .env file TODO SOURCE?  (Isa AI Developer, 2025)
+# Loading environment variables from .env file
 load_dotenv()
 
-# Testing that API key is loaded
+# Setting up Open AI API
 #  (Isa AI Developer, 2025)
 api_key = os.getenv("OPENAI_API_KEY")
-if api_key:
-    print(f"OpenAI API key loaded: {api_key[:20]}...")
-else:
-    print("OpenAI API key not found in .env file")
-
 openai_client = OpenAI(api_key=api_key)
 
 # --------
@@ -247,7 +242,7 @@ class VerifyPickupResponse(BaseModel):
 class AnalyticsChatRequest(BaseModel):
     branch_id:str
     question: str
-    period_type: str = "month"  # defaults to a month
+    period_type: str = "day"  # defaults to day
     reference_date: str = None
 
 
@@ -1136,7 +1131,7 @@ def get_approved_awaiting_pickup(
 @app.get("/analytics/basic-metrics")
 def get_basic_metrics(
         branch_id: str,
-        period_type:str ="month", # defaults to month
+        period_type:str ="day", # defaults to day
         reference_date: str = None, # defaults to today
         conn=Depends(get_conn)
 ):
@@ -1243,7 +1238,7 @@ def get_basic_metrics(
 @app.get("/analytics/chart")
 def get_period_chart(
         branch_id: str,
-        period_type: str = "month",
+        period_type: str = "day",
         reference_date: str = None,
         conn=Depends(get_conn)
 ):
