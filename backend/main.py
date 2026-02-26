@@ -1406,7 +1406,7 @@ def get_org_users(
                 o.org_name
             FROM app_user au
             LEFT JOIN user_branch ub ON ub.user_id = au.user_id
-            JOIN organisation o ON o.org_id = ub.org_id
+            JOIN organisation o ON o.org_id = au.org_id
             WHERE au.org_id = %s
             ORDER BY au.user_email
             """,
