@@ -9,10 +9,7 @@ import calendar
 # WEEK CHART
 
 def generate_week_chart(cur, branch_id, ref, start_date, end_date):
-    """
-    Generate chart for WEEK period type
-    Shows daily breakdown Mon-Sun
-    """
+
     # Initialize arrays for all 7 days
     listed_by_day = [0, 0, 0, 0, 0, 0, 0]
     rescued_by_day = [0, 0, 0, 0, 0, 0, 0]
@@ -88,10 +85,7 @@ def generate_week_chart(cur, branch_id, ref, start_date, end_date):
 
 
 def generate_month_chart(cur, branch_id, ref, start_date, end_date):
-    """
-    Generate chart for MONTH period type
-    Shows breakdown by week within the month
-    """
+
     # Get first and last day of month
     first_day = datetime(ref.year, ref.month, 1)
     last_day_num = calendar.monthrange(ref.year, ref.month)[1]
@@ -181,10 +175,7 @@ def generate_month_chart(cur, branch_id, ref, start_date, end_date):
 # YEAR CHART
 
 def generate_year_chart(cur, branch_id, ref, start_date, end_date):
-    """
-    Generate chart for YEAR period type
-    Shows monthly breakdown Jan-Dec
-    """
+
     # Initialize arrays for all 12 months
     listed_by_month = [0] * 12
     rescued_by_month = [0] * 12

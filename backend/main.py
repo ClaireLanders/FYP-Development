@@ -20,6 +20,7 @@ import os
 from openai import OpenAI
 import calendar
 from analytics_helpers import generate_week_chart, generate_month_chart, generate_year_chart
+import hashlib
 
 
 
@@ -249,7 +250,32 @@ class AnalyticsChatRequest(BaseModel):
     period_type: str = "day"  # defaults to day
     reference_date: str = None
 
+# User story 9 and 10
+class OrgUserOutput(BaseModel):
+    user_id: str
+    user_email: str
+    user_type: str
+    org_name: str
 
+
+class BranchUserOutput(BaseModel):
+    user_branch_id: str
+    user_id: str
+    user_email: str
+    user_type: str
+    branch_name: str
+
+class CreateOrgUserRequest(BaseModel):
+    user_email: str
+    user_type: str      # 'S' for store staff, 'C' for charity volunteer
+    org_id: str
+    branch_id: str
+    password: str
+
+class AssignBranchRequest(BaseModel):
+    user_id: str
+    org_id: str
+    branch_id: str
 
 
 # -----------------------------------------------
@@ -1362,6 +1388,192 @@ def analytics_chat(payload:AnalyticsChatRequest, conn=Depends(get_conn)):
         }
     except Exception as e:
         raise HTTPException(500, f"Failed to generate AI Response: {e}")
+
+# user story 9 and 10
+# getting all users assigned to a specific organisation
+@app.get("/org-users", response_model=List[OrgUserOutput])
+def get_org_users(
+        org_id: str = Query(..., description="Organisation ID to get users for"),
+        conn=Depends(get_conn)
+):
+    with conn, conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT DISTINCT
+                au.user_id,
+                au.user_email,
+                au.user_type,
+                o.org_name
+            FROM app_user au
+            LEFT JOIN user_branch ub ON ub.user_id = au.user_id
+            JOIN organisation o ON o.org_id = ub.org_id
+            WHERE au.org_id = %s
+            ORDER BY au.user_email
+            """,
+            (org_id,)
+        )
+        rows = cur.fetchall()
+
+    return [
+        OrgUserOutput(
+            user_id=str(r[0]),
+            user_email=r[1],
+            user_type=r[2],
+            org_name=r[3],
+        )
+        for r in rows
+    ]
+
+
+# Creating new user adn assigning it to a branch
+# the password is hashed with sha256 before storing (GeeksforGeeks, 2026)
+@app.post("/org-users",response_model=OrgUserOutput)
+def create_user(payload: CreateOrgUserRequest, conn=Depends(get_conn)):
+    # Hashing the password before storing (GeeksforGeeks, 2025)
+    password_hash = hashlib.sha256(payload.password.encode()).hexdigest()
+
+    with conn:
+        with conn.cursor() as cur:
+            # Checking email is not already in use
+            cur.execute(
+                "SELECT user_id FROM app_user WHERE user_email = %s",
+                (payload.user_email,)
+            )
+            if cur.fetchone():
+                raise HTTPException(400, "A user with this email already exists")
+
+            # Getting org name for the response
+            cur.execute(
+                "SELECT org_name FROM organisation WHERE org_id = %s",
+                (payload.org_id,)
+            )
+            org_row = cur.fetchone()
+            if not org_row:
+                raise HTTPException(404, "Organisation not found")
+
+            # Creating the app_user record
+            cur.execute(
+                """
+                INSERT INTO app_user (user_email, user_type, password, org_id)
+                VALUES (%s, %s, %s, %s)
+                RETURNING user_id
+                """,
+                (payload.user_email, payload.user_type, password_hash, payload.org_id)
+            )
+            user_id = cur.fetchone()[0]
+
+    return OrgUserOutput(
+        user_id=str(user_id),
+        user_email=payload.user_email,
+        user_type=payload.user_type,
+        org_name=org_row[0],
+    )
+# Getting all users assigned to a specific branch
+@app.get("/branch-users", response_model=List[BranchUserOutput])
+def get_branch_users(
+        branch_id: str = Query(..., description="Branch ID to get assigned users for"),
+        conn=Depends(get_conn)
+):
+    with conn, conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT
+                ub.user_branch_id,
+                au.user_id,
+                au.user_email,
+                au.user_type,
+                b.branch_name
+            FROM user_branch ub
+            JOIN app_user au ON au.user_id = ub.user_id
+            JOIN branch b ON b.branch_id = ub.branch_id
+            WHERE ub.branch_id = %s
+            ORDER BY au.user_email
+            """,
+            (branch_id,)
+        )
+        rows = cur.fetchall()
+
+    return [
+        BranchUserOutput(
+            user_branch_id=str(r[0]),
+            user_id=str(r[1]),
+            user_email=r[2],
+            user_type=r[3],
+            branch_name=r[4],
+        )
+        for r in rows
+    ]
+
+# Assigning an existing user to a branch
+@app.post("/branch-users/assign", response_model=BranchUserOutput)
+def assign_user_to_branch(payload: AssignBranchRequest, conn=Depends(get_conn)):
+    with conn:
+        with conn.cursor() as cur:
+            # Checking the user exists
+            cur.execute(
+                "SELECT user_email, user_type FROM app_user WHERE user_id = %s",
+                (payload.user_id,)
+            )
+            user_row = cur.fetchone()
+            if not user_row:
+                raise HTTPException(404, "User not found")
+
+            # Checking user is not already assigned to this branch
+            cur.execute(
+                """
+                SELECT user_branch_id FROM user_branch
+                WHERE user_id = %s AND branch_id = %s
+                """,
+                (payload.user_id, payload.branch_id)
+            )
+            if cur.fetchone():
+                raise HTTPException(400, "User is already assigned to this branch")
+
+            # Getting branch name for the response
+            cur.execute(
+                "SELECT branch_name FROM branch WHERE branch_id = %s",
+                (payload.branch_id,)
+            )
+            branch_row = cur.fetchone()
+            if not branch_row:
+                raise HTTPException(404, "Branch not found")
+
+            # Creating the user_branch record
+            cur.execute(
+                """
+                INSERT INTO user_branch (user_id, org_id, branch_id)
+                VALUES (%s, %s, %s)
+                RETURNING user_branch_id
+                """,
+                (payload.user_id, payload.org_id, payload.branch_id)
+            )
+            user_branch_id = cur.fetchone()[0]
+
+    return BranchUserOutput(
+        user_branch_id=str(user_branch_id),
+        user_id=str(payload.user_id),
+        user_email=user_row[0],
+        user_type=user_row[1],
+        branch_name=branch_row[0],
+    )
+
+# Removing a user from a branch
+@app.delete("/branch-users/{user_branch_id}")
+def remove_user_from_branch(user_branch_id: str, conn=Depends(get_conn)):
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM user_branch WHERE user_branch_id = %s RETURNING user_branch_id",
+                (user_branch_id,)
+            )
+            if not cur.fetchone():
+                raise HTTPException(404, "Branch assignment not found")
+
+    return {"message": "User removed from branch successfully"}
+
+
+
+
 
 
 
