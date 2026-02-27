@@ -250,6 +250,7 @@ class AnalyticsChatRequest(BaseModel):
     period_type: str = "day"  # defaults to day
     reference_date: str = None
 
+
 # User story 9 and 10
 class OrgUserOutput(BaseModel):
     user_id: str
@@ -265,12 +266,13 @@ class BranchUserOutput(BaseModel):
     user_type: str
     branch_name: str
 
+
 class CreateOrgUserRequest(BaseModel):
     user_email: str
-    user_type: str      # 'S' for store staff, 'C' for charity volunteer
+    user_type: str
     org_id: str
-    branch_id: str
     password: str
+
 
 class AssignBranchRequest(BaseModel):
     user_id: str
