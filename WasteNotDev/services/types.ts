@@ -101,7 +101,34 @@ export interface ChatResponse {
   answer: string;
   metrics: BasicMetrics;
 }
+// User Story 9 & 10: User Management
+export interface OrgUser {
+  user_id: string;
+  user_email: string;
+  user_type: string;
+  org_name: string;
+}
 
+export interface BranchUser {
+  user_branch_id: string;
+  user_id: string;
+  user_email: string;
+  user_type: string;
+  branch_name: string;
+}
+
+export interface CreateOrgUserRequest {
+  user_email: string;
+  user_type: string;
+  org_id: string;
+  password: string;
+}
+
+export interface AssignBranchRequest {
+  user_id: string;
+  org_id: string;
+  branch_id: string;
+}
 
 
 // REFERENCES
