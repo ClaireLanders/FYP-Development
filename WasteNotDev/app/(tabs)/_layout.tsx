@@ -71,9 +71,9 @@ export default function TabLayout() {
         }}
         />
         <Tabs.Screen
-            name="members"
+            name="users"
             options={{
-                title: 'Members',
+                title: 'Users',
                 tabBarIcon: ({color}) => <IconSymbol size={28} name="paperplane.fill" color={color} />
           }}
       />

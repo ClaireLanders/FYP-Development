@@ -19,11 +19,11 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUserManagement } from '@/hooks/useUserManagement';
-import { MemberCard } from './MemberCard';
+import { MemberCard } from './UserCard';
 import { UserRegisterForm } from './UserRegisterForm';
 
 // TODO: Replace with actual user context/authentication
-const ORG_ID = '4ff352c7-eb27-4a98-92f6-7a40cced8981';
+const ORG_ID = '8c52d6e5-b836-4f65-a442-79ffc4471e08';
 const BRANCH_ID = '03a897a0-e271-4174-aed2-d283a888dbae';
 const USER_TYPE = 'S'; // 'S' for store, 'C' for charity
 

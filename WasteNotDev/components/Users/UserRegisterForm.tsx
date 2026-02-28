@@ -16,7 +16,7 @@ interface UserRegisterFormProps {
   onCancel: () => void;
 }
 
-export const MemberForm: React.FC<UserRegisterFormProps> = ({
+export const UserRegisterForm: React.FC<UserRegisterFormProps> = ({
   orgId,
   userType,
   onSubmit,
