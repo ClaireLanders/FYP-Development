@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUserManagement } from '@/hooks/useUserManagement';
-import { MemberCard } from './UserCard';
+import { UserCard } from './UserCard';
 import { UserRegisterForm } from './UserRegisterForm';
 
 // TODO: Replace with actual user context/authentication
@@ -161,7 +161,7 @@ export function UserManagementView() {
         ) : (
           <View style={styles.listContainer}>
             {branchUsers.map((user) => (
-              <MemberCard
+              <UserCard
                 key={user.user_branch_id}
                 userEmail={user.user_email}
                 userType={user.user_type}
@@ -186,7 +186,7 @@ export function UserManagementView() {
         ) : (
           <View style={styles.listContainer}>
             {unassignedUsers.map((user) => (
-              <MemberCard
+              <UserCard
                 key={user.user_id}
                 userEmail={user.user_email}
                 userType={user.user_type}

@@ -7,7 +7,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-interface MemberCardProps {
+interface UserCardProps {
   userEmail: string;
   userType: string;
   branchName?: string;
@@ -15,7 +15,7 @@ interface MemberCardProps {
   onRemove?: () => void;
 }
 
-export const MemberCard: React.FC<MemberCardProps> = ({
+export const UserCard: React.FC<UserCardProps> = ({
   userEmail,
   userType,
   branchName,
