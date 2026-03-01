@@ -13,6 +13,8 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useOrgRegistration } from '@/hooks/useOrgRegistration';
 
@@ -80,132 +82,136 @@ export function OrgRegistrationForm() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Register Organisation</Text>
-        <Text style={styles.headerSubtitle}>
-          Set up your organisation, branch, and manager account
-        </Text>
-      </View>
-
-      {/* Org Type Toggle */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Organisation Type</Text>
-        <View style={styles.toggleRow}>
-          <TouchableOpacity
-            style={[styles.toggleButton, orgType === 's' && styles.toggleButtonActive]}
-            onPress={() => setOrgType('s')}
-          >
-            <Text style={[styles.toggleText, orgType === 's' && styles.toggleTextActive]}>
-              Store
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView style={styles.scrollView}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Register Organisation</Text>
+            <Text style={styles.headerSubtitle}>
+              Set up your organisation, branch, and manager account
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleButton, orgType === 'c' && styles.toggleButtonActive]}
-            onPress={() => setOrgType('c')}
-          >
-            <Text style={[styles.toggleText, orgType === 'c' && styles.toggleTextActive]}>
-              Charity
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+          </View>
+          {/* Org Type Toggle */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Organisation Type</Text>
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                style={[styles.toggleButton, orgType === 's' && styles.toggleButtonActive]}
+                onPress={() => setOrgType('s')}
+              >
+                <Text style={[styles.toggleText, orgType === 's' && styles.toggleTextActive]}>
+                  Store
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggleButton, orgType === 'c' && styles.toggleButtonActive]}
+                onPress={() => setOrgType('c')}
+              >
+                <Text style={[styles.toggleText, orgType === 'c' && styles.toggleTextActive]}>
+                  Charity
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
-      {/* Organisation Details */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Organisation Details</Text>
+          {/* Organisation Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Organisation Details</Text>
 
-        <Text style={styles.label}>Organisation Name</Text>
-        <TextInput
-          style={styles.input}
-          value={orgName}
-          onChangeText={setOrgName}
-          placeholder="e.g. Tesco"
-          placeholderTextColor="#999"
-          editable={!loading}
-        />
+            <Text style={styles.label}>Organisation Name</Text>
+            <TextInput
+              style={styles.input}
+              value={orgName}
+              onChangeText={setOrgName}
+              placeholder="e.g. Tesco"
+              placeholderTextColor="#999"
+              editable={!loading}
+            />
 
-        <Text style={styles.label}>Organisation Email</Text>
-        <TextInput
-          style={styles.input}
-          value={orgEmail}
-          onChangeText={setOrgEmail}
-          placeholder="e.g. contact@tesco.ie"
-          placeholderTextColor="#999"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          editable={!loading}
-        />
-      </View>
+            <Text style={styles.label}>Organisation Email</Text>
+            <TextInput
+              style={styles.input}
+              value={orgEmail}
+              onChangeText={setOrgEmail}
+              placeholder="e.g. contact@tesco.ie"
+              placeholderTextColor="#999"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!loading}
+            />
+          </View>
 
-      {/* Branch Details */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Branch Details</Text>
+          {/* Branch Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Branch Details</Text>
 
-        <Text style={styles.label}>Branch Name</Text>
-        <TextInput
-          style={styles.input}
-          value={branchName}
-          onChangeText={setBranchName}
-          placeholder="e.g. Tesco Express"
-          placeholderTextColor="#999"
-          editable={!loading}
-        />
+            <Text style={styles.label}>Branch Name</Text>
+            <TextInput
+              style={styles.input}
+              value={branchName}
+              onChangeText={setBranchName}
+              placeholder="e.g. Tesco Express"
+              placeholderTextColor="#999"
+              editable={!loading}
+            />
 
-        <Text style={styles.label}>Branch Address</Text>
-        <TextInput
-          style={styles.input}
-          value={branchLocation}
-          onChangeText={setBranchLocation}
-          placeholder="e.g. Brewery Quarter, South Main St, Cork"
-          placeholderTextColor="#999"
-          editable={!loading}
-        />
-      </View>
+            <Text style={styles.label}>Branch Address</Text>
+            <TextInput
+              style={styles.input}
+              value={branchLocation}
+              onChangeText={setBranchLocation}
+              placeholder="e.g. Brewery Quarter, South Main St, Cork"
+              placeholderTextColor="#999"
+              editable={!loading}
+            />
+          </View>
 
-      {/* Manager Account */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Manager Account</Text>
+          {/* Manager Account */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Manager Account</Text>
 
-        <Text style={styles.label}>Manager Email</Text>
-        <TextInput
-          style={styles.input}
-          value={managerEmail}
-          onChangeText={setManagerEmail}
-          placeholder="e.g. manager@tesco.ie"
-          placeholderTextColor="#999"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          editable={!loading}
-        />
+            <Text style={styles.label}>Manager Email</Text>
+            <TextInput
+              style={styles.input}
+              value={managerEmail}
+              onChangeText={setManagerEmail}
+              placeholder="e.g. manager@tesco.ie"
+              placeholderTextColor="#999"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!loading}
+            />
 
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          value={managerPassword}
-          onChangeText={setManagerPassword}
-          placeholder="Min 6 characters"
-          placeholderTextColor="#999"
-          secureTextEntry
-          editable={!loading}
-        />
-      </View>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              value={managerPassword}
+              onChangeText={setManagerPassword}
+              placeholder="Min 6 characters"
+              placeholderTextColor="#999"
+              secureTextEntry
+              editable={!loading}
+            />
+          </View>
 
-      {/* Submit Button */}
-      <View style={styles.section}>
-        <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.submitButtonText}>Register Organisation</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          {/* Submit Button */}
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.submitButtonText}>Register Organisation</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -296,5 +302,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  scrollView: {
+    flex: 1
   },
 });
