@@ -129,7 +129,24 @@ export interface AssignBranchRequest {
   org_id: string;
   branch_id: string;
 }
+// User Story 11 & 12: Organisation Registration
+export interface OrgRegistrationRequest {
+  org_type: string;
+  org_name: string;
+  org_email: string;
+  branch_name: string;
+  branch_location: string;
+  manager_email: string;
+  manager_password: string;
+}
 
+export interface OrgRegistrationResponse {
+  org_id: string;
+  branch_id: string;
+  user_id: string;
+  user_branch_id: string;
+  message: string;
+}
 
 // REFERENCES
 // ChatGPT. (2025, November 7). Retrieved from chatgpt.com: https://chatgpt.com/c/69176485-1458-8331-b053-4df0abe35697
