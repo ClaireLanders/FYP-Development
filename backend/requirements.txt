@@ -6,3 +6,4 @@ qrcode[pil]==8.0
 pillow==11.1.0
 openai
 python-dotenv
+python-multipart

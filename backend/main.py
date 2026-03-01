@@ -7,7 +7,9 @@
 
 
 import uvicorn
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, File, UploadFile, Form
+from fastapi.staticfiles import StaticFiles
+import uuid
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -37,11 +39,18 @@ openai_client = OpenAI(api_key=api_key)
 # --------
 # Setting up FastAPI
 app = FastAPI()
+# ---------------------
+# User Story 13
+# Creating the uploads directory if it does not already exist (Python, 2026)
+os.makedirs("uploads", exist_ok=True)
+# Mounting the uploads folder so saved images are accessible at /uploads/filename (FastAPI, 2026)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+#-----------------------------------
 
 # accessing the application
 # port the frontend is running on
 origins = [
-     "http://localhost:5173", "http://127.0.0.1:5173" # so the vite dev server can call teh api from either origin
+     "http://localhost:5173", "http://127.0.0.1:5173" # so the vite dev server can call the api from either origin
  ]
 
 # Adding CORS middleware to block unauthorised websites, endpoints, or servers from accessing the API
@@ -68,7 +77,7 @@ connection_pool = psycopg2.pool.ThreadedConnectionPool(
     port = os.getenv("DB_PORT", 5432)
 
 )
-
+# -------------------------------------------
 
 
 # Updated get_conn function for the pool
@@ -295,6 +304,16 @@ class OrgRegistrationResponse(BaseModel):
     user_id: str
     user_branch_id: str
     message: str
+
+# User Story 13: Product Management
+class ProductOutput(BaseModel):
+    product_id: str
+    branch_id: str
+    product_name: str
+    product_desc: Optional[str] = None
+    product_image: Optional[str] = None
+    product_price: Optional[float] = None
+    category: Optional[str] = None
 
 
 # -----------------------------------------------
@@ -1681,7 +1700,153 @@ def register_organisation(payload: OrgRegistrationRequest, conn=Depends(get_conn
         message=f"Organisation '{payload.org_name}' registered successfully"
     )
 
+# User Story 13: Product Management
+# Create a new product for a branch
+# Using Form() instead of a Pydantic model as file uploads require multipart/form-data encoding (FastAPI, 2026)
+# Endpoint is async as UploadFile.read() is an asynchronous operation (FastAPI, 2026)
+@app.post("/products", response_model=ProductOutput)
+async def create_product(
+    branch_id: str = Form(...),
+    product_name: str = Form(...),
+    product_desc: Optional[str] = Form(None),
+    product_price: Optional[float] = Form(None),
+    category: Optional[str] = Form(None),
+    product_image: Optional[UploadFile] = File(None),
+    conn=Depends(get_conn)
+):
+    if not product_name.strip():
+        raise HTTPException(400, "Product name is required")
 
+    image_path = None
+    if product_image:
+        # Extracting the file extension to preserve the original file type (Python, 2026)
+        ext = os.path.splitext(product_image.filename)[1]
+        # Generating a unique filename using UUID to prevent collisions (Python, 2026)
+        filename = f"{uuid.uuid4()}{ext}"
+        filepath = os.path.join("uploads", filename)
+
+        # Reading the file bytes asynchronously and saving to disk (FastAPI, 2026)
+        contents = await product_image.read()
+        with open(filepath, "wb") as f:
+            f.write(contents)
+
+        # Storing the URL path rather than the system path so the frontend can access it via StaticFiles
+        image_path = f"/uploads/{filename}"
+
+    with conn:
+        with conn.cursor() as cur:
+            # Verifying the branch exists
+            cur.execute(
+                "SELECT branch_id FROM branch WHERE branch_id = %s",
+                (branch_id,)
+            )
+            if not cur.fetchone():
+                raise HTTPException(404, "Branch not found")
+
+            # Checking for duplicate product name within the same branch
+            cur.execute(
+                "SELECT product_id FROM product WHERE product_name = %s AND branch_id = %s",
+                (product_name.strip(), branch_id)
+            )
+            if cur.fetchone():
+                raise HTTPException(400, "A product with this name already exists for this branch")
+
+            # Inserting the new product record with the image path
+            cur.execute(
+                """
+                INSERT INTO product (branch_id, product_name, product_desc, product_image, product_price, category)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING product_id
+                """,
+                (branch_id, product_name.strip(), product_desc, image_path, product_price, category)
+            )
+            product_id = cur.fetchone()[0]
+
+    return ProductOutput(
+        product_id=str(product_id),
+        branch_id=branch_id,
+        product_name=product_name.strip(),
+        product_desc=product_desc,
+        product_image=image_path,
+        product_price=product_price,
+        category=category,
+    )
+
+# Updating an existing product
+# using Form() and File() to support image replacement (FastAPI, 2026)
+@app.patch("/products/{product_id}", response_model=ProductOutput)
+async def update_product(
+    product_id: str,
+    product_name: Optional[str] = Form(None),
+    product_desc: Optional[str] = Form(None),
+    product_price: Optional[float] = Form(None),
+    category: Optional[str] = Form(None),
+    product_image: Optional[UploadFile] = File(None),
+    conn=Depends(get_conn)
+):
+    with conn:
+        with conn.cursor() as cur:
+            # Checking the product exists before attempting to update
+            cur.execute(
+                "SELECT product_id, branch_id, product_name, product_desc, product_image, product_price, category FROM product WHERE product_id = %s",
+                (product_id,)
+            )
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(404, "Product not found")
+
+            # If a new image is uploaded, saving it and replacing the stored path
+            image_path = row[4]
+            if product_image:
+                ext = os.path.splitext(product_image.filename)[1]
+                filename = f"{uuid.uuid4()}{ext}"
+                filepath = os.path.join("uploads", filename)
+
+                contents = await product_image.read()
+                with open(filepath, "wb") as f:
+                    f.write(contents)
+
+                image_path = f"/uploads/{filename}"
+
+            # Using existing values as fallback for any fields not provided in the update
+            updated_name = product_name.strip() if product_name else row[2]
+            updated_desc = product_desc if product_desc is not None else row[3]
+            updated_price = product_price if product_price is not None else row[5]
+            updated_category = category if category is not None else row[6]
+
+            cur.execute(
+                """
+                UPDATE product
+                SET product_name = %s, product_desc = %s, product_image = %s, product_price = %s, category = %s
+                WHERE product_id = %s
+                """,
+                (updated_name, updated_desc, image_path, updated_price, updated_category, product_id)
+            )
+
+    return ProductOutput(
+        product_id=str(product_id),
+        branch_id=str(row[1]),
+        product_name=updated_name,
+        product_desc=updated_desc,
+        product_image=image_path,
+        product_price=float(updated_price) if updated_price else None,
+        category=updated_category,
+    )
+
+# Delete a product
+# Deleting a product by ID, using RETURNING to confirm the record existed
+@app.delete("/products/{product_id}")
+def delete_product(product_id: str, conn=Depends(get_conn)):
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM product WHERE product_id = %s RETURNING product_id",
+                (product_id,)
+            )
+            if not cur.fetchone():
+                raise HTTPException(404, "Product not found")
+
+    return {"message": "Product deleted successfully"}
 
 
 
