@@ -279,6 +279,23 @@ class AssignBranchRequest(BaseModel):
     org_id: str
     branch_id: str
 
+# User Story 11 & 12: Organisation Registration
+class OrgRegistrationRequest(BaseModel):
+    org_type: str  # 'S' for store, 'C' for charity
+    org_name: str
+    org_email: str
+    branch_name: str
+    branch_location: str
+    manager_email: str
+    manager_password: str
+
+class OrgRegistrationResponse(BaseModel):
+    org_id: str
+    branch_id: str
+    user_id: str
+    user_branch_id: str
+    message: str
+
 
 # -----------------------------------------------
 # The below code defines the endpoints
@@ -1573,7 +1590,88 @@ def remove_user_from_branch(user_branch_id: str, conn=Depends(get_conn)):
 
     return {"message": "User removed from branch successfully"}
 
+# User Story 11 & 12: Organisation Registration
+# Creates a new organisation, first branch, manager account, and links them together
+# Password is hashed with sha256 before storing (GeeksforGeeks, 2026)
+@app.post("/register-org", response_model=OrgRegistrationResponse)
+def register_organisation(payload: OrgRegistrationRequest, conn=Depends(get_conn)):
+    # Validating org_type
+    if payload.org_type not in ('s', 'c'):
+        raise HTTPException(400, "Organisation type must be 's' (store) or 'c' (charity)")
 
+    # Hashing the password before storing
+    password_hash = hashlib.sha256(payload.manager_password.encode()).hexdigest()
+
+    with conn:
+        with conn.cursor() as cur:
+            # Checking if manager email is already in use
+            cur.execute(
+                "SELECT user_id FROM app_user WHERE user_email = %s",
+                (payload.manager_email,)
+            )
+            if cur.fetchone():
+                raise HTTPException(400, "A user with this email already exists")
+
+            # Checking if org name is already in use
+            cur.execute(
+                "SELECT org_id FROM organisation WHERE org_name = %s",
+                (payload.org_name,)
+            )
+            if cur.fetchone():
+                raise HTTPException(400, "An organisation with this name already exists")
+
+            # Step 1: Create the organisation
+            cur.execute(
+                """
+                INSERT INTO organisation (org_type, org_name, org_email)
+                VALUES (%s, %s, %s)
+                RETURNING org_id
+                """,
+                (payload.org_type, payload.org_name, payload.org_email)
+            )
+            org_id = cur.fetchone()[0]
+
+            # Step 2: Create the first branch
+            cur.execute(
+                """
+                INSERT INTO branch (org_id, branch_name, branch_location)
+                VALUES (%s, %s, %s)
+                RETURNING branch_id
+                """,
+                (org_id, payload.branch_name, payload.branch_location)
+            )
+            branch_id = cur.fetchone()[0]
+
+            # Step 3: Create the manager user account
+            # user_type is set automatically to match org_type
+            cur.execute(
+                """
+                INSERT INTO app_user (user_email, user_type, password, org_id)
+                VALUES (%s, %s, %s, %s)
+                RETURNING user_id
+                """,
+                (payload.manager_email, payload.org_type, password_hash, org_id)
+            )
+            user_id = cur.fetchone()[0]
+
+            # Step 4: Link the user to the org and branch
+            cur.execute(
+                """
+                INSERT INTO user_branch (user_id, org_id, branch_id)
+                VALUES (%s, %s, %s)
+                RETURNING user_branch_id
+                """,
+                (user_id, org_id, branch_id)
+            )
+            user_branch_id = cur.fetchone()[0]
+
+    return OrgRegistrationResponse(
+        org_id=str(org_id),
+        branch_id=str(branch_id),
+        user_id=str(user_id),
+        user_branch_id=str(user_branch_id),
+        message=f"Organisation '{payload.org_name}' registered successfully"
+    )
 
 
 
