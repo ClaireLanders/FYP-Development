@@ -1718,7 +1718,7 @@ async def create_product(
         raise HTTPException(400, "Product name is required")
 
     image_path = None
-    if product_image:
+    if product_image and product_image.filename:
         # Extracting the file extension to preserve the original file type (Python, 2026)
         ext = os.path.splitext(product_image.filename)[1]
         # Generating a unique filename using UUID to prevent collisions (Python, 2026)
@@ -1797,7 +1797,7 @@ async def update_product(
 
             # If a new image is uploaded, saving it and replacing the stored path
             image_path = row[4]
-            if product_image:
+            if product_image and product_image.filename:
                 ext = os.path.splitext(product_image.filename)[1]
                 filename = f"{uuid.uuid4()}{ext}"
                 filepath = os.path.join("uploads", filename)
