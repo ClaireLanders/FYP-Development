@@ -3,7 +3,7 @@
 // getChart(): fetches chart data (labels + datasets) for a given period
 // askQuestion(): sends a question to the AI chat endpoint with period context
 // All calls are made through the shared api instance (api.ts).
-// Service layer pattern adapted from (Tim, T. W., 2024)
+
 
 import { api } from './api';
 import type {BasicMetrics, ChartResponse, ChatResponse} from './types';
