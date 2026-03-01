@@ -1711,7 +1711,7 @@ async def create_product(
     product_desc: Optional[str] = Form(None),
     product_price: Optional[float] = Form(None),
     category: Optional[str] = Form(None),
-    product_image: Optional[UploadFile] = File(None),
+    product_image: Optional[UploadFile] = File(default=None),
     conn=Depends(get_conn)
 ):
     if not product_name.strip():
@@ -1781,7 +1781,7 @@ async def update_product(
     product_desc: Optional[str] = Form(None),
     product_price: Optional[float] = Form(None),
     category: Optional[str] = Form(None),
-    product_image: Optional[UploadFile] = File(None),
+    product_image: Optional[UploadFile] = File(default=None),
     conn=Depends(get_conn)
 ):
     with conn:
