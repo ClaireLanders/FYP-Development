@@ -1620,6 +1620,14 @@ def register_organisation(payload: OrgRegistrationRequest, conn=Depends(get_conn
             if cur.fetchone():
                 raise HTTPException(400, "An organisation with this name already exists")
 
+            # Checking if org email is already in use
+            cur.execute(
+                "SELECT org_id FROM organisation WHERE org_email = %s",
+                (payload.org_email,)
+            )
+            if cur.fetchone():
+                raise HTTPException(400, "An organisation with this email already exists")
+
             # Step 1: Create the organisation
             cur.execute(
                 """
