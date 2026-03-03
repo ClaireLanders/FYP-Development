@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { API_BASE_URL } from '@/services/api';
 
 interface ProductCardProps {
   productId: string;
@@ -43,7 +44,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     <View style={styles.card}>
       {productImage && (
         <Image
-          source={{ uri: productImage }}
+          source={{ uri: '${API_BASE_URL}${productImage}' }}
           style={styles.image}
           resizeMode="cover"
         />

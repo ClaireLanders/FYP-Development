@@ -23,6 +23,7 @@ import type { ProductOutput } from '@/services/types';
 // TODO: Replace with actual user context/authentication
 const BRANCH_ID = '03a897a0-e271-4174-aed2-d283a888dbae';
 
+
 export function ProductManagementView() {
   const {
     products,
