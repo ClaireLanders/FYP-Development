@@ -20,7 +20,8 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.clairelanders.WasteNotDev"
+      "package": "com.clairelanders.WasteNotDev",
+      "usesCleartextTraffic": true
     },
     "web": {
       "output": "static",

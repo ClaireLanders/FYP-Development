@@ -42,12 +42,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <View style={styles.card}>
-      {productImage && (
+      {productImage && productImage.startsWith('/uploads/') && (
         <Image
-          source={{ uri: '${API_BASE_URL}${productImage}' }}
+          source={{ uri: `${API_BASE_URL}${productImage}` }}
           style={styles.image}
           resizeMode="cover"
-        />
+          />
       )}
 
       <View style={styles.info}>
@@ -97,7 +97,8 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 150,
+    height: 200,
+    backgroundColor: 'red'
   },
   info: {
     padding: 14,
