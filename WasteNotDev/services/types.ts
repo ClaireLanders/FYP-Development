@@ -148,6 +148,17 @@ export interface OrgRegistrationResponse {
   message: string;
 }
 
+// User Story 13: Product Management
+export interface ProductOutput {
+  product_id: string;
+  branch_id: string;
+  product_name: string;
+  product_desc: string | null;
+  product_image: string | null;
+  product_price: number | null;
+  category: string | null;
+}
+
 // REFERENCES
 // ChatGPT. (2025, November 7). Retrieved from chatgpt.com: https://chatgpt.com/c/69176485-1458-8331-b053-4df0abe35697
 // ChatGPT. (2025, November 11). Retrieved from chatgpt.com: https://chatgpt.com/c/69203ef4-2430-8326-be09-e8e39fed78c5
