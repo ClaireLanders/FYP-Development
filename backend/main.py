@@ -319,7 +319,7 @@ class ProductOutput(BaseModel):
 # -----------------------------------------------
 # The below code defines the endpoints
 # This is adapted from (Tech With Tim, 2024)
-@app.get("/get_products", response_model=List[BranchProducts])  # get endpoint that will return all the products for the branch
+@app.get("/get_products")  # get endpoint that will return all the products for the branch
 def get_products(
         branch_id: str = Query(..., description="Branch ID to get products for"),
         conn=Depends(get_conn),
@@ -328,7 +328,13 @@ def get_products(
         with conn, conn.cursor() as cur:
             cur.execute(
             """
-            SELECT product_id, product_name
+            SELECT 
+            product_id,
+            product_name,
+            product_desc, 
+            product_image,
+            product_price,
+            category
             FROM product
             WHERE branch_id = %s
             ORDER BY product_name;
@@ -339,7 +345,14 @@ def get_products(
             rows = cur.fetchall()
         # Returning a list of BranchProducts
         return [
-            BranchProducts(product_id=str(r[0]), product_name=r[1])
+            {
+                "product_id": str(r[0]),
+                "product_name": r[1],
+                "product_desc": r[2],
+                "product_image": r[3],
+                "product_price": float(r[4]) if r[4] else None,
+                "category": r[5],
+            }
             for r in rows
             ]
 
