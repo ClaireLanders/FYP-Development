@@ -1795,6 +1795,7 @@ async def update_product(
     product_price: Optional[float] = Form(None),
     category: Optional[str] = Form(None),
     product_image = File(default=None),
+    remove_image: Optional[str] = Form(None),
     conn=Depends(get_conn)
 ):
     with conn:
@@ -1810,7 +1811,9 @@ async def update_product(
 
             # If a new image is uploaded, saving it and replacing the stored path
             image_path = row[4]
-            if product_image and hasattr(product_image, 'filename') and product_image.filename:
+            if remove_image == "true":
+                image_path = None
+            elif product_image and hasattr(product_image, 'filename') and product_image.filename:
                 ext = os.path.splitext(product_image.filename)[1]
                 filename = f"{uuid.uuid4()}{ext}"
                 filepath = os.path.join("uploads", filename)

@@ -19,6 +19,7 @@ import {
   Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { API_BASE_URL } from '@/services/api';
 
 interface ProductFormProps {
   // If editing, pass existing values; if creating, leave undefined
@@ -54,6 +55,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const [category, setCategory] = useState(initialCategory);
   const [imageUri, setImageUri] = useState<string | null>(initialImage);
   const [saving, setSaving] = useState(false);
+  const [newImagePicked, setNewImagePicked] = useState(false);
 
   // Opening the device image picker
   const pickImage = async () => {
@@ -66,6 +68,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
 
     if (!result.canceled && result.assets[0]) {
       setImageUri(result.assets[0].uri);
+      setNewImagePicked(true);
     }
   };
 
@@ -88,7 +91,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         desc.trim() || null,
         parsedPrice,
         category.trim() || null,
-        imageUri,
+        newImagePicked ? (imageUri ?? 'REMOVE'): null,
       );
 
       if (success && !isEditing) {
@@ -118,8 +121,23 @@ export const ProductForm: React.FC<ProductFormProps> = ({
 
         {/* Image Picker */}
         <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-          {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+          {imageUri && (imageUri.startsWith('/uploads/') || imageUri.startsWith('file://') || imageUri.startsWith('content://')) ? (
+              <View>
+                <Image source={{ uri: imageUri.startsWith('/uploads') ? `${API_BASE_URL}${imageUri}` : imageUri }}
+                       style={styles.imagePreview} />
+                <View style={styles.imageOverlay}>
+                  <Text style={styles.imageOverlayText}>Tap to change image</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => {
+                    setImageUri(null);
+                    setNewImagePicked(true);
+                  }}
+                >
+                    <Text style={styles.removeImageText}>Remove Image</Text>
+                  </TouchableOpacity>
+              </View>
           ) : (
             <View style={styles.imagePlaceholder}>
               <Text style={styles.imagePlaceholderText}>Tap to add image</Text>
@@ -295,4 +313,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 'bold',
   },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 8,
+    alignItems: 'center',
+},
+imageOverlayText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+},
+
+removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'red',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+},
+removeImageText: {
+  color: '#fff',
+  fontSize: 12,
+  fontWeight: 'bold',
+},
 });

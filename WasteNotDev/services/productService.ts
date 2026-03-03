@@ -31,7 +31,7 @@ export const productService = {
     if (productPrice !== null) formData.append('product_price', productPrice.toString());
     if (category) formData.append('category', category);
 
-    if (imageUri) {
+    if (imageUri){
       const filename = imageUri.split('/').pop() || 'photo.jpg';
       const match = /\.(\w+)$/.exec(filename);
       const fileType = match ? `image/${match[1]}` : 'image/jpeg';
@@ -65,7 +65,9 @@ export const productService = {
     if (productPrice !== null) formData.append('product_price', productPrice.toString());
     if (category) formData.append('category', category);
 
-    if (imageUri) {
+    if (imageUri === 'REMOVE') {
+      formData.append('remove_image', 'true');
+    }else if (imageUri && (imageUri.startsWith('file://') || imageUri.startsWith('content://'))){
       const filename = imageUri.split('/').pop() || 'photo.jpg';
       const match = /\.(\w+)$/.exec(filename);
       const fileType = match ? `image/${match[1]}` : 'image/jpeg';
@@ -76,7 +78,8 @@ export const productService = {
         type: fileType,
       } as any);
     }
-
+    console.log('FormData entries:', JSON.stringify(formData));
+    console.log('Sending PATCH to:', `/products/${productId}`);
     const response = await api.patch(`/products/${productId}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
