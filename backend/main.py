@@ -1711,14 +1711,14 @@ async def create_product(
     product_desc: Optional[str] = Form(None),
     product_price: Optional[float] = Form(None),
     category: Optional[str] = Form(None),
-    product_image: Optional[UploadFile] = File(default=None),
+    product_image =  File(default=None),
     conn=Depends(get_conn)
 ):
     if not product_name.strip():
         raise HTTPException(400, "Product name is required")
 
     image_path = None
-    if product_image and product_image.filename:
+    if product_image and hasattr(product_image, 'filename') and product_image.filename:
         # Extracting the file extension to preserve the original file type (Python, 2026)
         ext = os.path.splitext(product_image.filename)[1]
         # Generating a unique filename using UUID to prevent collisions (Python, 2026)
@@ -1781,7 +1781,7 @@ async def update_product(
     product_desc: Optional[str] = Form(None),
     product_price: Optional[float] = Form(None),
     category: Optional[str] = Form(None),
-    product_image: Optional[UploadFile] = File(default=None),
+    product_image = File(default=None),
     conn=Depends(get_conn)
 ):
     with conn:
@@ -1797,7 +1797,7 @@ async def update_product(
 
             # If a new image is uploaded, saving it and replacing the stored path
             image_path = row[4]
-            if product_image and product_image.filename:
+            if product_image and hasattr(product_image, 'filename') and product_image.filename:
                 ext = os.path.splitext(product_image.filename)[1]
                 filename = f"{uuid.uuid4()}{ext}"
                 filepath = os.path.join("uploads", filename)
