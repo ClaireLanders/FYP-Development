@@ -24,7 +24,7 @@
       "usesCleartextTraffic": true
     },
     "web": {
-      "output": "static",
+      "output": "static"
     },
     "plugins": [
       "expo-router",
@@ -44,7 +44,8 @@
         {
           "cameraPermission": "Allow WasteNot to access your camera to scan pickup QR code ?"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

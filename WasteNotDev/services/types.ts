@@ -159,6 +159,25 @@ export interface ProductOutput {
   category: string | null;
 }
 
+// User Authentication
+export interface LoginRequest {
+  user_email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user_id: string;
+  user_email: string;
+  user_type: string;
+  role: string;
+  org_id: string;
+  branch_id: string | null;
+  branch_name: string | null;
+  org_name: string;
+}
+
 // REFERENCES
 // ChatGPT. (2025, November 7). Retrieved from chatgpt.com: https://chatgpt.com/c/69176485-1458-8331-b053-4df0abe35697
 // ChatGPT. (2025, November 11). Retrieved from chatgpt.com: https://chatgpt.com/c/69203ef4-2430-8326-be09-e8e39fed78c5
