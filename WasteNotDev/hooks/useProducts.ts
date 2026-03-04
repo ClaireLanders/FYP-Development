@@ -12,27 +12,27 @@ export const useProducts = (branchId: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await productService.getByBranch(branchId);
-        setProducts(data);
-      } catch (err) {
-        setError(err as Error);
-        console.error('Error fetching products:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await productService.getByBranch(branchId);
+      setProducts(data);
+    } catch (err) {
+      setError(err as Error);
+      console.error('Error fetching products:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (branchId) {
       fetchProducts();
     }
   }, [branchId]);
 
-  return { products, loading, error };
+  return { products, loading, error, refetch: fetchProducts };
 };
 
 // REFERENCES

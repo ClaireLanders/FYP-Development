@@ -7,6 +7,7 @@
 
 import React, { useState } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { ProductQuantityInput } from './ProductQuantityInput';
@@ -19,9 +20,16 @@ export const ListingForm = () => {
   const { user } = useAuth();
   const BRANCH_ID = user?.branch_id ?? '';
   const USER_BRANCH_ID = user?.user_branch_id ?? '';
-  const { products, loading } = useProducts(BRANCH_ID);
+  const { products, loading, refetch } = useProducts(BRANCH_ID);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
+
+   // Re-fetching products when the tab is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      void refetch();
+    }, [])
+  );
 
   const handleQuantityChange = (productId: string, quantity: number) => {
     setQuantities((prev) => ({
