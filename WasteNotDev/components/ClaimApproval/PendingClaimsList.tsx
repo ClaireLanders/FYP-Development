@@ -11,16 +11,21 @@ import { PendingClaimCard } from './PendingClaimCard';
 import { ApprovedClaimCard } from './ApprovedClaimCard';
 import { PendingClaimDetail, ApprovedClaimGroup } from '@/services/claimApprovalService';
 import { useAuth } from '@/context/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 export const PendingClaimsList: React.FC = () => {
   const { user } = useAuth();
   const branchId = user?.branch_id ?? '';
   const userBranchId = user?.user_branch_id ?? '';
 
-
   const { claims, approvedClaims, loading, error, refresh, approveClaim, approving } =
     usePendingClaims(branchId, userBranchId);
 
+  useFocusEffect(
+  React.useCallback(() => {
+    refresh();
+  }, [])
+);
   const handleApproveClaim = (claimId: string) => {
     Alert.alert(
       'Approve Claim',

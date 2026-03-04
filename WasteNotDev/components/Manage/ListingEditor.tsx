@@ -12,6 +12,7 @@ import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { EditableLineItem } from './EditableLineItem';
 import { useListingManagement } from '../../hooks/useListingManagement';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/context/AuthContext';
 
 
@@ -19,8 +20,13 @@ export const ListingEditor = () => {
   const { user } = useAuth();
   const BRANCH_ID = user?.branch_id ?? '';
   const USER_BRANCH_ID = user?.user_branch_id ?? '';
-  const { listings, loading, updateItem, cancelListing } = useListingManagement(BRANCH_ID, USER_BRANCH_ID);
+  const { listings, loading, updateItem, cancelListing, refetch } = useListingManagement(BRANCH_ID, USER_BRANCH_ID);
 
+  useFocusEffect(
+  React.useCallback(() => {
+    void refetch();
+  }, [])
+);
   const handleCancel = (listing: any) => {
     Alert.alert(
       'Cancel Listing',

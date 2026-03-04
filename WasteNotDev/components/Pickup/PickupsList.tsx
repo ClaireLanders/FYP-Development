@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -13,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { pickupService} from "@/services/pickupService";
 import { useAuth } from '@/context/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface MyPickup {
   claim_id: string;
@@ -32,10 +30,11 @@ export const MyPickupsList: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
 
-
-  useEffect(() => {
-    loadPickups();
-  }, []);
+    useFocusEffect(
+      React.useCallback(() => {
+        loadPickups();
+      }, [])
+    );
 
   // Loading the pickups for the user
   const loadPickups = async () => {

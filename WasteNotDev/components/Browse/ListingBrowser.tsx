@@ -7,13 +7,13 @@
 // (ReactNative, 2026)
 
 import React, { useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, View, RefreshControl} from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, View} from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { ClaimableItem } from './ClaimableItem';
 import { useListings } from '../../hooks/useListings';
 import { claimService } from '../../services/claimService';
-import type { Listing } from '../../services/types';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/context/AuthContext';
 
 
@@ -26,6 +26,12 @@ export const ListingBrowser = () => {
   const [claimQuantities, setClaimQuantities] = useState<Record<string, number>>({});
   const [claiming, setClaiming] = useState(false);
 
+  // Re-fetching listings when the tab is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      void refetch();
+    }, [])
+  );
   const handleListingSelect = (listingId: string) => {
     setSelectedListing(listingId === selectedListing ? null : listingId);
     setClaimQuantities({}); // Reset quantities when switching listings
@@ -88,7 +94,6 @@ export const ListingBrowser = () => {
     );
   }
 
-  const activeListing = listings.find((l) => l.listing_id === selectedListing);
 
   return (
     <ThemedView style={styles.container}>
