@@ -142,6 +142,9 @@ class ListingAvailable(BaseModel):
     listing_id: str
     org_name: Optional[str] = None
     branch_name: Optional[str] = None
+    branch_location: Optional[str] = None
+    org_image: Optional[str] = None
+    branch_image: Optional[str] = None
     created_at: Optional[str] = None
     items: List[ListingItemAvailable]
 

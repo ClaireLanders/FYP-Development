@@ -16,12 +16,12 @@ export interface ListingLineItem {
 
 export interface Listing {
   listing_id: string;
-  org_id: string;
   org_name: string;
-  branch_id: string;
   branch_name: string;
-  branch_address: string;
-  created_at: string;
+  branch_location?: string;
+  org_image?: string;
+  branch_image?: string;
+  created_at?: string;
   items: ListingLineItem[];
 }
 
