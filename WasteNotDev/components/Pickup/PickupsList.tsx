@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+    RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { pickupService} from "@/services/pickupService";
@@ -103,6 +104,9 @@ export const MyPickupsList: React.FC = () => {
       <FlatList<MyPickup>
         data={pickups}
         keyExtractor={(item) => item.claim_id}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={loadPickups} />
+        }
         renderItem={({ item }) => {
           return (
             <TouchableOpacity

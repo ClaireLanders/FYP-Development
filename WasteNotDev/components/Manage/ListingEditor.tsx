@@ -7,7 +7,7 @@
 
 
 import React from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, View } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, View, RefreshControl } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { EditableLineItem } from './EditableLineItem';
@@ -76,7 +76,12 @@ export const ListingEditor = () => {
         Manage Your Listings
       </ThemedText>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+          style={styles.content}
+          refreshControl={
+        <RefreshControl refreshing={loading} onRefresh={refetch}/>
+          }
+      >
         {listings.map((listing) => (
           <View key={listing.listing_id} style={styles.listingContainer}>
             <ThemedView style={styles.listingHeader}>

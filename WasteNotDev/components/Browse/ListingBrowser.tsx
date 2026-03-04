@@ -7,7 +7,7 @@
 // (ReactNative, 2026)
 
 import React, { useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, View} from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, View, RefreshControl} from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { ClaimableItem } from './ClaimableItem';
@@ -101,7 +101,11 @@ export const ListingBrowser = () => {
         Available Listings
       </ThemedText>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+          style={styles.content}
+          refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={refetch} />
+        }>
         {listings.map((listing) => (
           <View key={listing.listing_id}>
             <TouchableOpacity
