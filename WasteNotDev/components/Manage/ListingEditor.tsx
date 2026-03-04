@@ -28,8 +28,10 @@ export const ListingEditor = () => {
   const [showAddItem, setShowAddItem] = useState<string | null>(null);
   const [addingItem, setAddingItem] = useState(false);
   const [expandedListings, setExpandedListings] = useState<string[]>([]);
+  const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
-  // Split listings into today's and past (excluding cancelled)
+    // Splitting listings into today's and past (excluding cancelled)
   const { todayListings, pastListings } = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     const todayL: typeof listings = [];
@@ -52,6 +54,73 @@ export const ListingEditor = () => {
 
     return { todayListings: todayL, pastListings: pastL };
   }, [listings]);
+
+  // Initialise pending changes when listings load
+  React.useEffect(() => {
+    const initial: Record<string, string> = {};
+    todayListings.forEach((listing) => {
+      listing.items.forEach((item) => {
+        initial[item.listing_line_item_id] = item.quantity.toString();
+      });
+    });
+    setPendingChanges(initial);
+  }, [todayListings]);
+
+  const handleQuantityChange = (itemId: string, value: string) => {
+    setPendingChanges((prev) => ({ ...prev, [itemId]: value }));
+  };
+
+  const hasChanges = todayListings.some((listing) =>
+    listing.items.some(
+      (item) =>
+        pendingChanges[item.listing_line_item_id] !== undefined &&
+        pendingChanges[item.listing_line_item_id] !== item.quantity.toString()
+    )
+  );
+
+  const handleSaveAll = async () => {
+    // Validate all changes
+    const invalidItem = Object.entries(pendingChanges).find(([_, val]) => {
+      const num = parseInt(val, 10);
+      return isNaN(num) || num < 0;
+    });
+    if (invalidItem) {
+      Alert.alert('Invalid Quantity', 'Please ensure all quantities are valid numbers.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      // Build list of changed items per listing
+      for (const listing of todayListings) {
+        const changedItems = listing.items
+          .filter(
+            (item) =>
+              pendingChanges[item.listing_line_item_id] !== undefined &&
+              pendingChanges[item.listing_line_item_id] !== item.quantity.toString()
+          )
+          .map((item) => ({
+            listing_line_item_id: item.listing_line_item_id,
+            quantity: parseInt(pendingChanges[item.listing_line_item_id], 10),
+          }));
+
+        if (changedItems.length > 0) {
+          await listingService.updateItem({
+            user_branch_id: USER_BRANCH_ID,
+            listing_id: listing.listing_id,
+            items: changedItems,
+          });
+        }
+      }
+      Alert.alert('Success', 'All changes saved!');
+      await refetch();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save changes.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
 
   const toggleExpanded = (listingId: string) => {
     setExpandedListings((prev) =>
@@ -161,9 +230,10 @@ export const ListingEditor = () => {
                 {listing.items.map((item) => (
                   <EditableLineItem
                     key={item.listing_line_item_id}
-                    item={item}
-                    listingId={listing.listing_id}
-                    onUpdate={updateItem}
+                    productName={item.product_name}
+                    quantity={pendingChanges[item.listing_line_item_id] ?? item.quantity.toString()}
+                    onChange={(val) => handleQuantityChange(item.listing_line_item_id, val)}
+                    editable={!saving}
                   />
                 ))}
               </ThemedView>
@@ -206,6 +276,17 @@ export const ListingEditor = () => {
                     <ThemedText style={styles.addItemButtonText}>+ Add Item</ThemedText>
                   </TouchableOpacity>
                 )
+              )}
+               {hasChanges && (
+                <TouchableOpacity
+                  style={[styles.saveAllButton, saving && styles.saveAllButtonDisabled]}
+                  onPress={handleSaveAll}
+                  disabled={saving}
+                >
+                  <ThemedText style={styles.saveAllButtonText}>
+                    {saving ? 'Saving...' : 'Save All Changes'}
+                  </ThemedText>
+                </TouchableOpacity>
               )}
             </View>
           ))
@@ -434,6 +515,23 @@ const styles = StyleSheet.create({
   historyItemQty: {
     fontSize: 14,
     color: '#666',
+    fontWeight: '600',
+  },
+  saveAllButton: {
+    backgroundColor: '#28a745',
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  saveAllButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  saveAllButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '600',
   },
 });
