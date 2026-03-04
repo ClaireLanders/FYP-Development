@@ -37,6 +37,17 @@ export const listingService = {
   cancel: async (data: { user_branch_id: string; listing_id: string; items: UpdateListingItemRequest[] }): Promise<void> => {
     await api.post('/listing/cancel', data);
   },
+
+  // Adding a new item to an existing listing
+  addItem: async (data: {
+    listing_id: string;
+    user_branch_id: string;
+    product_id: string;
+    quantity: number;
+  }): Promise<void> => {
+    await api.post('/listing/add-item', data);
+  },
+
 };
 
 // REFERENCES

@@ -11,6 +11,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/context/AuthContext';
 import { LoginScreen } from '@/components/Auth/LoginScreen';
+import { NoBranchScreen } from '@/components/Auth/NoBranchScreen';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -30,6 +31,11 @@ export default function TabLayout() {
   // If not logged in, show the login screen
   if (!user) {
     return <LoginScreen />;
+  }
+
+  // If logged in user nto assigned to a branch yet
+  if (!user.branch_id && user.role !== 'manager') {
+    return <NoBranchScreen onLogout={handleLogout} />;
   }
 
   // Determining which tabs to show based on user_type and role
@@ -149,3 +155,4 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+

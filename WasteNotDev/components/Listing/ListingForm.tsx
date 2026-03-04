@@ -25,26 +25,30 @@ export const ListingForm = () => {
   const [saving, setSaving] = useState(false);
   const router = useRouter();
   const [hasListingToday, setHasListingToday] = useState(false);
+  const [checking, setChecking] = useState(true);
 
-// Checking if a listing already exists for today
 useFocusEffect(
   React.useCallback(() => {
-    void refetch();
-    const checkTodayListing = async () => {
+    const checkAndRefetch = async () => {
       try {
+        setChecking(true);
+        void refetch();
         const listings = await listingService.getByBranch(BRANCH_ID);
         const today = new Date().toISOString().split('T')[0];
         const todayListing = listings.some(
-          (l) => l.created_at && l.created_at.split('T')[0] === today
+          (l) => l.created_at && l.created_at.substring(0, 10) === today
         );
         setHasListingToday(todayListing);
       } catch (err) {
         console.error('Error checking today listing:', err);
+      } finally {
+        setChecking(false);
       }
     };
-    void checkTodayListing();
+    void checkAndRefetch();
   }, [])
 );
+
 
   const handleQuantityChange = (productId: string, quantity: number) => {
     setQuantities((prev) => ({
@@ -110,7 +114,7 @@ useFocusEffect(
   );
 }
 
-  if (loading) {
+  if (loading || checking ) {
     return (
       <ThemedView style={styles.centerContainer}>
         <ActivityIndicator size="large" />

@@ -101,23 +101,6 @@ def get_conn():
             connection_pool.putconn(conn)
 # ---------------------------------------------
 
-# from video "PostgreSQL in Python - Crash Course" (NeuralNine, 2023)
-# database connection
-# commentign out for the moment while working on the connection pool
-#
-# def get_conn():
-#     conn = psycopg2.connect(
-#         host="localhost",
-#         database="master",
-#         user="postgres",
-#         password="newpword3",
-#         port=5432)
-#     try:
-#         yield conn
-#     finally:
-#         conn.close()
-
-# -----------------------------------------------------------
 # The below code defines the pydantic data models
 # These models will be used in the below endpoints
 # This code is adapted for my models from (Tech With Tim, 2024)
@@ -159,6 +142,7 @@ class ListingAvailable(BaseModel):
     listing_id: str
     org_name: Optional[str] = None
     branch_name: Optional[str] = None
+    created_at: Optional[str] = None
     items: List[ListingItemAvailable]
 
 
@@ -200,6 +184,12 @@ class CancelListing(BaseModel):
 class CancelListingOutput(BaseModel):
     listing_id: str
     zeroed_amt: int
+
+class AddListingItemRequest(BaseModel):
+    listing_id: str
+    user_branch_id: str
+    product_id: str
+    quantity: int
 
 
 # User Story 5
@@ -504,7 +494,7 @@ def get_listings_by_branch(
     with conn, conn.cursor() as cur:
         cur.execute(
             """
-            SELECT l.listing_id
+            SELECT l.listing_id, l.created_at
             FROM listing l 
             JOIN user_branch ub ON ub.user_branch_id = l.user_branch_id
             JOIN branch b ON b.branch_id = ub.branch_id
@@ -527,7 +517,7 @@ def get_listings_by_branch(
             FROM listing_line_item lli
             JOIN product p ON p.product_id = lli.product_id
             WHERE lli.listing_id = ANY(%s::uuid[])
-            AND lli.quantity >= 1
+            AND lli.quantity >= 0
             ORDER BY p.product_name
             """,
             (listing_ids,))
@@ -546,13 +536,12 @@ def get_listings_by_branch(
             )
         # Response
         output: List[ListingAvailable] = []
-        for (lid,) in listing_rows:  # '(,)' so lid is the uuid, not the tuple
+        for lid, created_at in listing_rows:
             items = items_by_listing.get(lid, [])
-            if not items:
-                continue
             output.append(
                 ListingAvailable(
                     listing_id=str(lid),
+                    created_at=str(created_at) if created_at else None,
                     items=items,
                 )
             )
@@ -627,6 +616,49 @@ def cancel_listing(payload: CancelListing, conn=Depends(get_conn)):
             )
             zeroed = cur.rowcount
     return CancelListingOutput(listing_id=str(payload.listing_id), zeroed_amt=zeroed)
+
+# Adding a new item to an existing listing
+@app.post("/listing/add-item")
+def add_item_to_listing(payload: AddListingItemRequest, conn=Depends(get_conn)):
+    if payload.quantity < 0:
+        raise HTTPException(400, "Quantity must be >= 0")
+
+    with conn:
+        with conn.cursor() as cur:
+            # Verifying the listing belongs to this user's branch
+            cur.execute(
+                """
+                SELECT listing_id FROM listing
+                WHERE listing_id = %s AND user_branch_id = %s
+                """,
+                (payload.listing_id, payload.user_branch_id)
+            )
+            if not cur.fetchone():
+                raise HTTPException(404, "Listing not found for this branch")
+
+            # Checking if this product is already in the listing
+            cur.execute(
+                """
+                SELECT listing_line_item_id FROM listing_line_item
+                WHERE listing_id = %s AND product_id = %s
+                """,
+                (payload.listing_id, payload.product_id)
+            )
+            if cur.fetchone():
+                raise HTTPException(409, "This product is already in the listing")
+
+            # Adding the new line item
+            cur.execute(
+                """
+                INSERT INTO listing_line_item (listing_id, product_id, quantity)
+                VALUES (%s, %s, %s)
+                RETURNING listing_line_item_id
+                """,
+                (payload.listing_id, payload.product_id, payload.quantity)
+            )
+            new_id = cur.fetchone()[0]
+
+    return {"listing_line_item_id": str(new_id), "message": "Item added to listing"}
 
 # Making a claim, preventing over-claims
 @app.post("/claims", response_model=ClaimOutput)

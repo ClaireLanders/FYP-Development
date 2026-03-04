@@ -6,7 +6,7 @@
 // This is adapted for React Native from my own code in frontend/src/components/ManageListings.jsx
 
 
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, View, RefreshControl } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
@@ -14,6 +14,9 @@ import { EditableLineItem } from './EditableLineItem';
 import { useListingManagement } from '../../hooks/useListingManagement';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/context/AuthContext';
+import { useProducts } from '../../hooks/useProducts';
+import { listingService } from '../../services/listingService';
+
 
 
 export const ListingEditor = () => {
@@ -21,12 +24,34 @@ export const ListingEditor = () => {
   const BRANCH_ID = user?.branch_id ?? '';
   const USER_BRANCH_ID = user?.user_branch_id ?? '';
   const { listings, loading, updateItem, cancelListing, refetch } = useListingManagement(BRANCH_ID, USER_BRANCH_ID);
+  const { products } = useProducts(BRANCH_ID);
+  const [showAddItem, setShowAddItem] = useState<string | null>(null); // listing_id or null
+  const [addingItem, setAddingItem] = useState(false);
 
   useFocusEffect(
   React.useCallback(() => {
     void refetch();
   }, [])
 );
+  const handleAddItem = async (listingId: string, productId: string) => {
+  try {
+    setAddingItem(true);
+    await listingService.addItem({
+      listing_id: listingId,
+      user_branch_id: USER_BRANCH_ID,
+      product_id: productId,
+      quantity: 1,
+    });
+    Alert.alert('Success', 'Item added to listing');
+    setShowAddItem(null);
+    await refetch();
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.detail || 'Failed to add item';
+    Alert.alert('Error', errorMessage);
+  } finally {
+    setAddingItem(false);
+  }
+};
   const handleCancel = (listing: any) => {
     Alert.alert(
       'Cancel Listing',
@@ -114,6 +139,45 @@ export const ListingEditor = () => {
                 />
               ))}
             </ThemedView>
+            {/* Add Item Section */}
+            {showAddItem === listing.listing_id ? (
+              <View style={styles.addItemSection}>
+                <ThemedText style={styles.addItemTitle}>Select a product to add:</ThemedText>
+                {products
+                  .filter(p => !listing.items.some(item => item.product_id === p.product_id))
+                  .map(product => (
+                    <TouchableOpacity
+                      key={product.product_id}
+                      style={styles.addItemOption}
+                      onPress={() => handleAddItem(listing.listing_id, product.product_id)}
+                      disabled={addingItem}
+                    >
+                      <ThemedText style={styles.addItemOptionText}>
+                        {product.product_name}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  ))
+                }
+                {products.filter(p => !listing.items.some(item => item.product_id === p.product_id)).length === 0 && (
+                  <ThemedText style={styles.noProductsText}>All products are already in this listing</ThemedText>
+                )}
+                <TouchableOpacity
+                  style={styles.addItemCancelButton}
+                  onPress={() => setShowAddItem(null)}
+                >
+                  <ThemedText style={styles.addItemCancelText}>Cancel</ThemedText>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              products.filter(p => !listing.items.some(item => item.product_id === p.product_id)).length > 0 && (
+                <TouchableOpacity
+                  style={styles.addItemButton}
+                  onPress={() => setShowAddItem(listing.listing_id)}
+                >
+                  <ThemedText style={styles.addItemButtonText}>+ Add Item</ThemedText>
+                </TouchableOpacity>
+              )
+            )}
           </View>
         ))}
       </ScrollView>
@@ -180,22 +244,59 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 8,
     overflow: 'hidden',
   },
+  addItemButton: {
+  backgroundColor: '#2196F3',
+  padding: 12,
+  borderRadius: 8,
+  alignItems: 'center',
+  marginHorizontal: 16,
+  marginTop: 8,
+  marginBottom: 8,
+},
+addItemButtonText: {
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: '600',
+},
+addItemSection: {
+  backgroundColor: '#fff',
+  borderRadius: 8,
+  padding: 12,
+  marginHorizontal: 16,
+  marginTop: 8,
+  marginBottom: 8,
+  borderWidth: 1,
+  borderColor: '#2196F3',
+},
+addItemTitle: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#333',
+  marginBottom: 8,
+},
+addItemOption: {
+  padding: 12,
+  borderBottomWidth: 1,
+  borderBottomColor: '#e0e0e0',
+},
+addItemOptionText: {
+  fontSize: 16,
+  color: '#2196F3',
+},
+noProductsText: {
+  fontSize: 14,
+  color: '#666',
+  textAlign: 'center',
+  padding: 12,
+},
+addItemCancelButton: {
+  padding: 12,
+  alignItems: 'center',
+  marginTop: 8,
+},
+addItemCancelText: {
+  fontSize: 14,
+  color: '#666',
+  fontWeight: '600',
+},
 });
-// REFERENCES
-// ChatGPT. (2025, November 7). Retrieved from chatgpt.com: https://chatgpt.com/c/69176485-1458-8331-b053-4df0abe35697
-// ChatGPT. (2025, November 11). Retrieved from chatgpt.com: https://chatgpt.com/c/69203ef4-2430-8326-be09-e8e39fed78c5
-// ChatGPT. (2026, January 23). Retrieved from chatgpt.com: https://chatgpt.com/c/6973dd84-c8bc-832c-a62c-d1ceef72c186
-// Expo. (2024, June 15). Create a project. Retrieved from docs.expo.dev: https://docs.expo.dev/get-started/create-a-project/
-// Expo. (2025, July 10). Set up your environment. Retrieved from docs.expo.dev: https://docs.expo.dev/get-started/set-up-your-environment/?platform=android&device=simulated&mode=development-build
-// Grimm, S. (2024, July 9). From React to React Native in 12 Minutes. Retrieved from Youtube: https://www.youtube.com/watch?v=6UB3gw3SKfY
-// Kodaps Academy. (2023, March 29). React Native vs React JS in 2024 Differences and Shared Features. Retrieved from Youtube: https://www.youtube.com/watch?v=MSgIRdyJ6rk
-// NeuralNine. (2023, March 7). PostgreSQL in Python. Retrieved from youttube.com: https://www.youtube.com/watch?v=miEFm1CyjfM&t=33s
-// Programming with Mosh. (2020, May 11). React Native Tutorial for Beginners -Build a React Native App. Retrieved from Youtube: https://www.youtube.com/watch?v=0-S5a0eXPoc
-// React Native. (2025, December 16). Introduction. Retrieved from reactnative.dev/docs: https://reactnative.dev/docs/getting-started
-// Tim, T. W. (2024, November 19). How to Create a FastAPI & React Project-Python Backend + React Frontend. Retrieved from youtube.com: https://www.youtube.com/watch?v=aSdVU9-SxH4
-// W3 Schools. (2025, November 16). SQL Server COALESCE() Function. Retrieved from w3schools.com: https://www.w3schools.com/sql/func_sqlserver_coalesce.asp
-// W3Schools. (2025, November 18). Web APIs - Introduction. Retrieved from w3schools.com: https://www.w3schools.com/js/js_api_intro.asp
-// W3Schools. (2025, November 19). SQL LEFT JOIN Keyword. Retrieved from w3schools.com: https://www.w3schools.com/sql/sql_join_left.asp
-// Woodworth, S. (2026, January). IS4447 Modules. Retrieved from ucc.instructure.com: https://ucc.instructure.com/courses/86289
-// Yamamoto, T. (2025, August 22). Preventing Race Conditions with SELECT FOR UPDATE in Web Applications. Retrieved from leapcell.io: https://leapcell.io/blog/preventing-race-conditions-with-select-for-update-in-web-applications
-// YpnConnect-Soft. (2025, July 21). Styling in react vs reactnative (Web vs Mobile development). Retrieved from Youtube: https://www.youtube.com/watch?v=4CNERtrb3oQ
