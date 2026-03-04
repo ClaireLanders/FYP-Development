@@ -5,7 +5,7 @@
 
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, TouchableOpacity, View, Text } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -14,7 +14,11 @@ import { LoginScreen } from '@/components/Auth/LoginScreen';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   // Showing a loading spinner while checking for stored auth
   if (loading) {
@@ -37,7 +41,12 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
+        headerShown: true,
+          headerRight: () => (
+          <TouchableOpacity onPress={handleLogout} style={{ marginRight: 16 }}>
+            <Text style={{ color: '#f44336', fontSize: 14, fontWeight: '600'}as const }>Log Out</Text>
+          </TouchableOpacity>
+        ),
       }}>
 
       {/* Store tabs */}
@@ -106,7 +115,7 @@ export default function TabLayout() {
         options={{
           title: 'Analytics',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-          href: isManager ? undefined : null,
+          href: isStore && isManager ? undefined : null,
         }}
       />
       <Tabs.Screen

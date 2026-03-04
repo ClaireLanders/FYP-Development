@@ -12,12 +12,13 @@ import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { EditableLineItem } from './EditableLineItem';
 import { useListingManagement } from '../../hooks/useListingManagement';
+import { useAuth } from '@/context/AuthContext';
 
-
-const BRANCH_ID = '03a897a0-e271-4174-aed2-d283a888dbae';
-const USER_BRANCH_ID = '0ca58dd2-df98-42ee-b0a4-f6b43c00a3d8';
 
 export const ListingEditor = () => {
+  const { user } = useAuth();
+  const BRANCH_ID = user?.branch_id ?? '';
+  const USER_BRANCH_ID = user?.user_branch_id ?? '';
   const { listings, loading, updateItem, cancelListing } = useListingManagement(BRANCH_ID, USER_BRANCH_ID);
 
   const handleCancel = (listing: any) => {

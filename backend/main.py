@@ -341,6 +341,7 @@ class LoginResponse(BaseModel):
     org_id: str
     branch_id: Optional[str] = None
     branch_name: Optional[str] = None
+    user_branch_id: Optional[str] = None
     org_name: str
 
 
@@ -1934,7 +1935,7 @@ def login(payload: LoginRequest, conn=Depends(get_conn)):
             # Getting the user's branch (if assigned)
             cur.execute(
                 """
-                SELECT b.branch_id, b.branch_name
+                SELECT ub.user_branch_id, b.branch_id, b.branch_name
                 FROM user_branch ub
                 JOIN branch b ON b.branch_id = ub.branch_id
                 WHERE ub.user_id = %s
@@ -1943,8 +1944,9 @@ def login(payload: LoginRequest, conn=Depends(get_conn)):
                 (user_id,)
             )
             branch_row = cur.fetchone()
-            branch_id = str(branch_row[0]) if branch_row else None
-            branch_name = branch_row[1] if branch_row else None
+            user_branch_id = str(branch_row[0]) if branch_row else None
+            branch_id = str(branch_row[1]) if branch_row else None
+            branch_name = branch_row[2] if branch_row else None
 
             # Generating the JWT token
             token_data = {
@@ -1966,6 +1968,7 @@ def login(payload: LoginRequest, conn=Depends(get_conn)):
         role=role,
         org_id=org_id,
         branch_id=branch_id,
+        user_branch_id=user_branch_id,
         branch_name=branch_name,
         org_name=org_name,
     )

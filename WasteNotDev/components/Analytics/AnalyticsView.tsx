@@ -29,11 +29,12 @@ import { useAnalyticsChat } from '@/hooks/useAnalyticsChat';
 import Chart from './Chart';
 import ChatSection from './AIChat';
 import MetricCard from './MetricCard';
+import { useAuth } from '@/context/AuthContext';
 
-const BRANCH_ID = '03a897a0-e271-4174-aed2-d283a888dbae';
 
 export function AnalyticsView() {
-    // Analytics hook manages period state
+    const { user } = useAuth();
+    const BRANCH_ID = user?.branch_id ?? '';
     const {
         metrics,
         loading,

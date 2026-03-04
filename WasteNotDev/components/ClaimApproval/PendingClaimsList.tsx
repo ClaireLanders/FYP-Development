@@ -10,10 +10,13 @@ import { usePendingClaims } from '@/hooks/usePendingClaims';
 import { PendingClaimCard } from './PendingClaimCard';
 import { ApprovedClaimCard } from './ApprovedClaimCard';
 import { PendingClaimDetail, ApprovedClaimGroup } from '@/services/claimApprovalService';
+import { useAuth } from '@/context/AuthContext';
 
 export const PendingClaimsList: React.FC = () => {
-  const branchId = '03a897a0-e271-4174-aed2-d283a888dbae';
-  const userBranchId = '0ca58dd2-df98-42ee-b0a4-f6b43c00a3d8';
+  const { user } = useAuth();
+  const branchId = user?.branch_id ?? '';
+  const userBranchId = user?.user_branch_id ?? '';
+
 
   const { claims, approvedClaims, loading, error, refresh, approveClaim, approving } =
     usePendingClaims(branchId, userBranchId);

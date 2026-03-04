@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { pickupService} from "@/services/pickupService";
+import { useAuth } from '@/context/AuthContext';
 
 interface MyPickup {
   claim_id: string;
@@ -23,14 +24,14 @@ interface MyPickup {
 }
 
 export const MyPickupsList: React.FC = () => {
+  const { user } = useAuth();
+  const UserBranchId = user?.user_branch_id ?? '';
+  const BranchId = user?.branch_id ?? '';
   const router = useRouter();
   const [pickups, setPickups] = useState<MyPickup[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Charity user id
-  // TODO: will need to eventually change this to reflect the logged in credentials
-  const UserBranchId = '546c6ef4-ef5d-4582-b1c6-6977a42d1ce1';
-  const BranchId = '03deedb7-9515-44b3-a5fb-c5ad9a2708ef'
+
 
   useEffect(() => {
     loadPickups();
@@ -100,34 +101,36 @@ export const MyPickupsList: React.FC = () => {
         <Text style={styles.headerSubtitle}>View QR codes for approved claims</Text>
       </View>
 
-      <FlatList
+      <FlatList<MyPickup>
         data={pickups}
         keyExtractor={(item) => item.claim_id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.pickupCard}
-            onPress={() => handleViewQR(item.claim_id)}
-          >
-            <View style={styles.cardHeader}>
-              <View>
-                <Text style={styles.storeName}>{item.org_name}</Text>
-                <Text style={styles.branchName}>{item.branch_name}</Text>
+        renderItem={({ item }) => {
+          return (
+            <TouchableOpacity
+              style={styles.pickupCard}
+              onPress={() => handleViewQR(item.claim_id)}
+            >
+              <View style={styles.cardHeader}>
+                <View>
+                  <Text style={styles.storeName}>{item.org_name}</Text>
+                  <Text style={styles.branchName}>{item.branch_name}</Text>
+                </View>
+                <View style={styles.statusBadge}>
+                  <Text style={styles.statusText}>
+                    {item.complete ? 'PICKED UP' : 'APPROVED'}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>
-                  {item.complete ? 'PICKED UP' : 'APPROVED'}
-                </Text>
-              </View>
-            </View>
 
-            <View style={styles.cardBody}>
-              <Text style={styles.itemsText}>
-                {item.total_items} {item.total_items === 1 ? 'item' : 'items'}
-              </Text>
-              <Text style={styles.viewQRText}>View QR Code →</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+              <View style={styles.cardBody}>
+                <Text style={styles.itemsText}>
+                  {item.total_items} {item.total_items === 1 ? 'item' : 'items'}
+                </Text>
+                <Text style={styles.viewQRText}>View QR Code →</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
         contentContainerStyle={styles.listContainer}
       />
     </View>

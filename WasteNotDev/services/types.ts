@@ -175,6 +175,7 @@ export interface LoginResponse {
   org_id: string;
   branch_id: string | null;
   branch_name: string | null;
+  user_branch_id: string | null;
   org_name: string;
 }
 

@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 200,
-    backgroundColor: 'red'
+    backgroundColor: '#f0f0f0'
   },
   info: {
     padding: 14,

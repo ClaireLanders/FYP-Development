@@ -21,14 +21,15 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { UserCard } from './UserCard';
 import { UserRegisterForm } from './UserRegisterForm';
+import { useAuth } from '@/context/AuthContext';
 
-// TODO: Replace with actual user context/authentication
-const ORG_ID = '8c52d6e5-b836-4f65-a442-79ffc4471e08';
-const BRANCH_ID = '03a897a0-e271-4174-aed2-d283a888dbae';
-const USER_TYPE = 'S'; // 'S' for store, 'C' for charity
 
 export function UserManagementView() {
-  const {
+  const {user} = useAuth();
+  const ORG_ID = user?.org_id ?? '';
+  const BRANCH_ID = user?.branch_id ?? '';
+  const USER_TYPE = user?.user_type?? 's';
+  const{
     orgUsers,
     branchUsers,
     loading,

@@ -19,12 +19,14 @@ import { useProductManagement } from '@/hooks/useProductManagement';
 import { ProductCard } from './ProductCard';
 import { ProductForm } from './ProductForm';
 import type { ProductOutput } from '@/services/types';
+import { useAuth } from '@/context/AuthContext';
 
-// TODO: Replace with actual user context/authentication
-const BRANCH_ID = '03a897a0-e271-4174-aed2-d283a888dbae';
+
 
 
 export function ProductManagementView() {
+  const { user } = useAuth();
+  const BRANCH_ID = user?.branch_id ?? '';
   const {
     products,
     loading,

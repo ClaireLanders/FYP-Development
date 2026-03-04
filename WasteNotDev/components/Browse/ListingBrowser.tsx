@@ -14,11 +14,13 @@ import { ClaimableItem } from './ClaimableItem';
 import { useListings } from '../../hooks/useListings';
 import { claimService } from '../../services/claimService';
 import type { Listing } from '../../services/types';
+import { useAuth } from '@/context/AuthContext';
 
-// TODO: Replace with actual user context
-const USER_BRANCH_ID = '546c6ef4-ef5d-4582-b1c6-6977a42d1ce1';
+
 
 export const ListingBrowser = () => {
+  const { user } = useAuth();
+  const USER_BRANCH_ID = user?.user_branch_id ?? '';
   const { listings, loading, refetch } = useListings();
   const [selectedListing, setSelectedListing] = useState<string | null>(null);
   const [claimQuantities, setClaimQuantities] = useState<Record<string, number>>({});

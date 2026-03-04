@@ -12,12 +12,13 @@ import { ThemedText } from '@/components/themed-text';
 import { ProductQuantityInput } from './ProductQuantityInput';
 import { useProducts } from '../../hooks/useProducts';
 import { listingService } from '../../services/listingService';
+import { useAuth } from '@/context/AuthContext';
 
-// TODO: in the future need to replace with login credentials
-const BRANCH_ID = '03a897a0-e271-4174-aed2-d283a888dbae';
-const USER_BRANCH_ID = '0ca58dd2-df98-42ee-b0a4-f6b43c00a3d8';
 
 export const ListingForm = () => {
+  const { user } = useAuth();
+  const BRANCH_ID = user?.branch_id ?? '';
+  const USER_BRANCH_ID = user?.user_branch_id ?? '';
   const { products, loading } = useProducts(BRANCH_ID);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
