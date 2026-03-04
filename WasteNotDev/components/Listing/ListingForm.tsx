@@ -6,7 +6,7 @@
 // This is adapted for React Native from my own code in frontend/src/components/Listing.jsx
 
 import React, { useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
@@ -14,7 +14,7 @@ import { ProductQuantityInput } from './ProductQuantityInput';
 import { useProducts } from '../../hooks/useProducts';
 import { listingService } from '../../services/listingService';
 import { useAuth } from '@/context/AuthContext';
-
+import { useRouter } from 'expo-router';
 
 export const ListingForm = () => {
   const { user } = useAuth();
@@ -23,13 +23,28 @@ export const ListingForm = () => {
   const { products, loading, refetch } = useProducts(BRANCH_ID);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
+  const router = useRouter();
+  const [hasListingToday, setHasListingToday] = useState(false);
 
-   // Re-fetching products when the tab is focused
-  useFocusEffect(
-    React.useCallback(() => {
-      void refetch();
-    }, [])
-  );
+// Checking if a listing already exists for today
+useFocusEffect(
+  React.useCallback(() => {
+    void refetch();
+    const checkTodayListing = async () => {
+      try {
+        const listings = await listingService.getByBranch(BRANCH_ID);
+        const today = new Date().toISOString().split('T')[0];
+        const todayListing = listings.some(
+          (l) => l.created_at && l.created_at.split('T')[0] === today
+        );
+        setHasListingToday(todayListing);
+      } catch (err) {
+        console.error('Error checking today listing:', err);
+      }
+    };
+    void checkTodayListing();
+  }, [])
+);
 
   const handleQuantityChange = (productId: string, quantity: number) => {
     setQuantities((prev) => ({
@@ -71,6 +86,29 @@ export const ListingForm = () => {
       setSaving(false);
     }
   };
+  if (hasListingToday) {
+  return (
+    <ThemedView style={styles.container}>
+      <ThemedText type="title" style={styles.title}>
+        Create Tonights Listing
+      </ThemedText>
+      <View style={styles.todayMessageContainer}>
+        <ThemedText style={styles.todayMessageText}>
+          You already have a listing for today.
+        </ThemedText>
+        <ThemedText style={styles.todayMessageSubtext}>
+          You can edit quantities or add items on the Manage Listings tab.
+        </ThemedText>
+        <TouchableOpacity
+          style={styles.manageButton}
+          onPress={() => router.push('/manage')}
+        >
+          <ThemedText style={styles.manageButtonText}>Go to Manage Listings</ThemedText>
+        </TouchableOpacity>
+      </View>
+    </ThemedView>
+  );
+}
 
   if (loading) {
     return (
@@ -141,6 +179,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  todayMessageContainer: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: 24,
+},
+todayMessageText: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: '#333',
+  textAlign: 'center',
+  marginBottom: 8,
+},
+todayMessageSubtext: {
+  fontSize: 14,
+  color: '#666',
+  textAlign: 'center',
+  marginBottom: 24,
+},
+manageButton: {
+  backgroundColor: '#4CAF50',
+  padding: 16,
+  borderRadius: 12,
+  alignItems: 'center',
+  paddingHorizontal: 32,
+},
+manageButtonText: {
+  color: '#fff',
+  fontSize: 16,
+  fontWeight: 'bold',
+},
 });
 
 // REFERENCES
