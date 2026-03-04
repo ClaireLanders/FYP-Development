@@ -392,6 +392,26 @@ def make_listing(payload: Listing, conn=Depends(get_conn)):
 
     with conn:
         with conn.cursor() as cur:
+            # Checking if a listing already exists for this branch today
+            cur.execute(
+                """
+                SELECT l.listing_id FROM listing l
+                JOIN user_branch ub ON ub.user_branch_id = l.user_branch_id
+                WHERE ub.branch_id = (
+                    SELECT branch_id FROM user_branch WHERE user_branch_id = %s
+                )
+                AND DATE(l.created_at) = CURRENT_DATE
+                LIMIT 1
+                """,
+                (payload.user_branch_id,)
+            )
+            existing = cur.fetchone()
+            if existing:
+                raise HTTPException(
+                    status_code=409,
+                    detail="A listing already exists for your branch today. Go to Manage Listings to edit it."
+                )
+
             # creating the listing
             cur.execute(
                 """

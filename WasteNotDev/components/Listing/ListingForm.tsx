@@ -63,8 +63,9 @@ export const ListingForm = () => {
 
       // Reset quantities
       setQuantities({});
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create listing. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Failed to create listing. Please try again.';
+      Alert.alert('Error', errorMessage);
       console.error('Error creating listing:', error);
     } finally {
       setSaving(false);
