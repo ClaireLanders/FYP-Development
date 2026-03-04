@@ -23,9 +23,11 @@ from openai import OpenAI
 import calendar
 from analytics_helpers import generate_week_chart, generate_month_chart, generate_year_chart
 import hashlib
+from jose import jwt
 
 
-
+# Configurations
+#-----------------
 # Loading environment variables from .env file
 load_dotenv()
 
@@ -36,10 +38,10 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 openai_client = OpenAI(api_key=api_key)
 
-# --------
+# ----------------------------------
 # Setting up FastAPI
 app = FastAPI()
-# ---------------------
+# ---------------------------------
 # User Story 13
 # Creating the uploads directory if it does not already exist (Python, 2026)
 os.makedirs("uploads", exist_ok=True)
@@ -77,6 +79,14 @@ connection_pool = psycopg2.pool.ThreadedConnectionPool(
     port = os.getenv("DB_PORT", 5432)
 
 )
+# -------------------------------------------
+# JWT Configuration
+# Secret key loaded from .env file for security, following the same pattern
+# Token is signed using HS256 algorithm (python-jose, 2026)
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+ALGORITHM = "HS256"
+# Token expires after 7 days
+TOKEN_EXPIRY_DAYS = 7
 # -------------------------------------------
 
 
@@ -314,6 +324,24 @@ class ProductOutput(BaseModel):
     product_image: Optional[str] = None
     product_price: Optional[float] = None
     category: Optional[str] = None
+
+# User Story 14: Login
+# Authentication models
+class LoginRequest(BaseModel):
+    user_email: str
+    password: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user_id: str
+    user_email: str
+    user_type: str
+    role: str
+    org_id: str
+    branch_id: Optional[str] = None
+    branch_name: Optional[str] = None
+    org_name: str
 
 
 # -----------------------------------------------
@@ -1505,8 +1533,8 @@ def create_user(payload: CreateOrgUserRequest, conn=Depends(get_conn)):
             # Creating the app_user record
             cur.execute(
                 """
-                INSERT INTO app_user (user_email, user_type, password, org_id)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO app_user (user_email, user_type, password, org_id, role)
+                VALUES (%s, %s, %s, %s, 'staff')
                 RETURNING user_id
                 """,
                 (payload.user_email, payload.user_type, password_hash, payload.org_id)
@@ -1660,7 +1688,7 @@ def register_organisation(payload: OrgRegistrationRequest, conn=Depends(get_conn
             if cur.fetchone():
                 raise HTTPException(400, "An organisation with this email already exists")
 
-            # Step 1: Create the organisation
+            # Creating the organisation
             cur.execute(
                 """
                 INSERT INTO organisation (org_type, org_name, org_email)
@@ -1671,7 +1699,7 @@ def register_organisation(payload: OrgRegistrationRequest, conn=Depends(get_conn
             )
             org_id = cur.fetchone()[0]
 
-            # Step 2: Create the first branch
+            # Creating the first branch
             cur.execute(
                 """
                 INSERT INTO branch (org_id, branch_name, branch_location)
@@ -1682,12 +1710,12 @@ def register_organisation(payload: OrgRegistrationRequest, conn=Depends(get_conn
             )
             branch_id = cur.fetchone()[0]
 
-            # Step 3: Create the manager user account
+            # Creating the manager user account
             # user_type is set automatically to match org_type
             cur.execute(
                 """
-                INSERT INTO app_user (user_email, user_type, password, org_id)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO app_user (user_email, user_type, password, org_id, role)
+                VALUES (%s, %s, %s, %s, 'manager')
                 RETURNING user_id
                 """,
                 (payload.manager_email, payload.org_type, password_hash, org_id)
@@ -1864,6 +1892,83 @@ def delete_product(product_id: str, conn=Depends(get_conn)):
 
     return {"message": "Product deleted successfully"}
 
+# Login endpoint
+# Verifies email and password, returns a JWT token and user context
+# Password is hashed with SHA-256 before comparing (GeeksforGeeks, 2026)
+# JWT token is generated using python-jose (python-jose, 2026)
+@app.post("/login", response_model=LoginResponse)
+def login(payload: LoginRequest, conn=Depends(get_conn)):
+    # Hashing the password to compare against stored hash
+    password_hash = hashlib.sha256(payload.password.encode()).hexdigest()
+
+    with conn:
+        with conn.cursor() as cur:
+            # Finding the user by email and verifying password
+            cur.execute(
+                """
+                SELECT au.user_id, au.user_email, au.user_type, au.role, au.org_id
+                FROM app_user au
+                WHERE au.user_email = %s AND au.password = %s
+                """,
+                (payload.user_email, password_hash)
+            )
+            user = cur.fetchone()
+
+            if not user:
+                raise HTTPException(401, "Invalid email or password")
+
+            user_id = str(user[0])
+            user_email = user[1]
+            user_type = user[2]
+            role = user[3]
+            org_id = str(user[4])
+
+            # Getting the org name
+            cur.execute(
+                "SELECT org_name FROM organisation WHERE org_id = %s",
+                (org_id,)
+            )
+            org_row = cur.fetchone()
+            org_name = org_row[0] if org_row else "Unknown"
+
+            # Getting the user's branch (if assigned)
+            cur.execute(
+                """
+                SELECT b.branch_id, b.branch_name
+                FROM user_branch ub
+                JOIN branch b ON b.branch_id = ub.branch_id
+                WHERE ub.user_id = %s
+                LIMIT 1
+                """,
+                (user_id,)
+            )
+            branch_row = cur.fetchone()
+            branch_id = str(branch_row[0]) if branch_row else None
+            branch_name = branch_row[1] if branch_row else None
+
+            # Generating the JWT token
+            token_data = {
+                "sub": user_id,
+                "email": user_email,
+                "user_type": user_type,
+                "role": role,
+                "org_id": org_id,
+                "exp": datetime.utcnow() + timedelta(days=TOKEN_EXPIRY_DAYS)
+            }
+            access_token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+
+    return LoginResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user_id=user_id,
+        user_email=user_email,
+        user_type=user_type,
+        role=role,
+        org_id=org_id,
+        branch_id=branch_id,
+        branch_name=branch_name,
+        org_name=org_name,
+    )
 
 
 
