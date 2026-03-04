@@ -47,14 +47,13 @@ export const useListingManagement = (branchId: string, userBranchId: string) => 
     }
   };
 
-  const cancelListing = async (listingId: string, items: Array<{ listing_line_item_id: string; quantity: number }>) => {
-    try {
+  const cancelListing = async (listingId: string) => {
+    try{
       await listingService.cancel({
         user_branch_id: userBranchId,
         listing_id: listingId,
-        items,
       });
-      await fetchListings(); // Refresh the list
+       await fetchListings();
     } catch (err) {
       console.error('Error canceling listing:', err);
       throw err;

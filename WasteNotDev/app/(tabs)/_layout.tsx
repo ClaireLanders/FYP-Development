@@ -5,7 +5,7 @@
 
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, TouchableOpacity, View, Text } from 'react-native';
+import { ActivityIndicator, TouchableOpacity, Text } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';

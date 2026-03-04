@@ -34,7 +34,7 @@ export const listingService = {
 
   //Cancel an entire listing
 
-  cancel: async (data: { user_branch_id: string; listing_id: string; items: UpdateListingItemRequest[] }): Promise<void> => {
+  cancel: async (data: { user_branch_id: string; listing_id: string }): Promise<void> => {
     await api.post('/listing/cancel', data);
   },
 
