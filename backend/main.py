@@ -308,6 +308,23 @@ class OrgRegistrationResponse(BaseModel):
     user_branch_id: str
     message: str
 
+class OrganisationProfileOutput(BaseModel):
+    org_id: str
+    org_name: str
+    org_email: str
+
+class BranchProfileOutput(BaseModel):
+    branch_id: str
+    branch_name: str
+    branch_location: str
+
+class UpdateOrganisationRequest(BaseModel):
+    org_name: Optional[str] = None
+    org_email: Optional[str] = None
+
+class UpdateBranchRequest(BaseModel):
+    branch_name: Optional[str] = None
+    branch_location: Optional[str] = None
 
 
 # User Story 13: Product Management

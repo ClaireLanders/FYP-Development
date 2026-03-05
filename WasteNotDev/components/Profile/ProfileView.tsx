@@ -1,16 +1,16 @@
-// Profile screen view.
-// Staff: read-only details. Managers: can edit org + branch fields (US12).
+// Profile screen view (US12).
+// Staff: read-only. Managers: can edit org + branch profile fields.
 
 import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ActivityIndicator,
+  ScrollView,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
   Alert,
-  ScrollView,
 } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -20,69 +20,59 @@ export const ProfileView: React.FC = () => {
 
   const orgId = user?.org_id ?? '';
   const branchId = user?.branch_id ?? '';
-
+  const userId = user?.user_id ?? '';
   const isManager = user?.role === 'manager';
 
-  const { org, branch, loading, error, updateOrganisation, updateBranch, savingOrg, savingBranch } =
-    useProfile(orgId, branchId);
-
-  // Display fallbacks from auth (so screen still works if backend fetch fails)
-  const displayOrgName = org?.org_name ?? user?.org_name ?? '';
-  const displayOrgEmail = org?.org_email ?? '';
-  const displayBranchName = branch?.branch_name ?? user?.branch_name ?? '';
-  const displayBranchLocation = branch?.branch_location ?? '';
+  const { org, branch, loading, saving, error, refresh, updateOrganisation, updateBranch } =
+    useProfile({ orgId, branchId, userId });
 
   const [editingOrg, setEditingOrg] = useState(false);
   const [editingBranch, setEditingBranch] = useState(false);
 
-  const [orgNameInput, setOrgNameInput] = useState('');
-  const [orgEmailInput, setOrgEmailInput] = useState('');
-  const [branchNameInput, setBranchNameInput] = useState('');
-  const [branchLocationInput, setBranchLocationInput] = useState('');
+  const [orgNameDraft, setOrgNameDraft] = useState('');
+  const [orgEmailDraft, setOrgEmailDraft] = useState('');
+  const [branchNameDraft, setBranchNameDraft] = useState('');
+  const [branchLocationDraft, setBranchLocationDraft] = useState('');
 
-  // Prefill inputs when entering edit mode
+  // Keeping draft values in sync when data loads
   useMemo(() => {
-    if (editingOrg) {
-      setOrgNameInput(displayOrgName);
-      setOrgEmailInput(displayOrgEmail);
-    }
-    if (editingBranch) {
-      setBranchNameInput(displayBranchName);
-      setBranchLocationInput(displayBranchLocation);
-    }
+    setOrgNameDraft(org?.org_name ?? user?.org_name ?? '');
+    setOrgEmailDraft(org?.org_email ?? '');
+    setBranchNameDraft(branch?.branch_name ?? user?.branch_name ?? '');
+    setBranchLocationDraft(branch?.branch_location ?? '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingOrg, editingBranch]);
+  }, [org?.org_name, org?.org_email, branch?.branch_name, branch?.branch_location]);
 
   const handleSaveOrg = async () => {
     try {
       await updateOrganisation({
-        org_name: orgNameInput.trim(),
-        org_email: orgEmailInput.trim(),
+        org_name: orgNameDraft,
+        org_email: orgEmailDraft,
       });
       setEditingOrg(false);
       Alert.alert('Saved', 'Organisation details updated.');
     } catch (e) {
-      Alert.alert('Error', 'Failed to update organisation.');
+      Alert.alert('Error', 'Could not update organisation details.');
     }
   };
 
   const handleSaveBranch = async () => {
     try {
       await updateBranch({
-        branch_name: branchNameInput.trim(),
-        branch_location: branchLocationInput.trim(),
+        branch_name: branchNameDraft,
+        branch_location: branchLocationDraft,
       });
       setEditingBranch(false);
       Alert.alert('Saved', 'Branch details updated.');
     } catch (e) {
-      Alert.alert('Error', 'Failed to update branch.');
+      Alert.alert('Error', 'Could not update branch details.');
     }
   };
 
   if (!user) {
     return (
       <View style={styles.center}>
-        <Text style={styles.muted}>Not logged in</Text>
+        <Text style={styles.errorText}>Not logged in</Text>
       </View>
     );
   }
@@ -90,21 +80,28 @@ export const ProfileView: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.muted}>Loading profile…</Text>
+        <ActivityIndicator size="large" />
+        <Text style={styles.helperText}>Loading profile...</Text>
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {!!error && <Text style={styles.errorText}>{error}</Text>}
+      {!!error && (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={refresh} style={styles.retryBtn}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <Text style={styles.title}>Profile</Text>
 
-      {/* User details */}
+      {/* User details (always read-only) */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Your Account</Text>
+        <Text style={styles.sectionTitle}>Your details</Text>
 
         <View style={styles.row}>
           <Text style={styles.label}>Email</Text>
@@ -117,143 +114,125 @@ export const ProfileView: React.FC = () => {
         </View>
 
         <View style={styles.row}>
-          <Text style={styles.label}>Type</Text>
-          <Text style={styles.value}>{user.user_type}</Text>
+          <Text style={styles.label}>Organisation</Text>
+          <Text style={styles.value}>{user.org_name}</Text>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Branch</Text>
+          <Text style={styles.value}>{user.branch_name ?? 'Not assigned'}</Text>
         </View>
       </View>
 
-      {/* Organisation */}
+      {/* Organisation profile (US12) */}
       <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Organisation</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Organisation profile</Text>
 
-          {isManager && !editingOrg && (
-            <TouchableOpacity onPress={() => setEditingOrg(true)}>
-              <Text style={styles.link}>Edit</Text>
+          {isManager && (
+            <TouchableOpacity
+              onPress={() => setEditingOrg((v) => !v)}
+              style={styles.editBtn}
+              disabled={saving}
+            >
+              <Text style={styles.editText}>{editingOrg ? 'Cancel' : 'Edit'}</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {!editingOrg ? (
-          <>
-            <View style={styles.row}>
-              <Text style={styles.label}>Name</Text>
-              <Text style={styles.value}>{displayOrgName}</Text>
-            </View>
-
-            <View style={styles.row}>
-              <Text style={styles.label}>Email</Text>
-              <Text style={styles.value}>
-                {displayOrgEmail ? displayOrgEmail : 'Not set'}
-              </Text>
-            </View>
-          </>
-        ) : (
-          <>
-            <Text style={styles.inputLabel}>Organisation Name</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Org name</Text>
+          {editingOrg ? (
             <TextInput
-              value={orgNameInput}
-              onChangeText={setOrgNameInput}
               style={styles.input}
+              value={orgNameDraft}
+              onChangeText={setOrgNameDraft}
               placeholder="Organisation name"
             />
+          ) : (
+            <Text style={styles.value}>{org?.org_name ?? user.org_name}</Text>
+          )}
+        </View>
 
-            <Text style={styles.inputLabel}>Organisation Email</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Org email</Text>
+          {editingOrg ? (
             <TextInput
-              value={orgEmailInput}
-              onChangeText={setOrgEmailInput}
               style={styles.input}
+              value={orgEmailDraft}
+              onChangeText={setOrgEmailDraft}
               placeholder="Organisation email"
               autoCapitalize="none"
+              keyboardType="email-address"
             />
+          ) : (
+            <Text style={styles.value}>{org?.org_email ?? 'Not set'}</Text>
+          )}
+        </View>
 
-            <View style={styles.actions}>
-              <TouchableOpacity
-                style={[styles.button, styles.secondaryButton]}
-                onPress={() => setEditingOrg(false)}
-                disabled={savingOrg}
-              >
-                <Text style={styles.secondaryButtonText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.button, styles.primaryButton, savingOrg && styles.disabled]}
-                onPress={handleSaveOrg}
-                disabled={savingOrg}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {savingOrg ? 'Saving…' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </>
+        {editingOrg && (
+          <TouchableOpacity
+            onPress={handleSaveOrg}
+            style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+            disabled={saving}
+          >
+            <Text style={styles.saveText}>{saving ? 'Saving...' : 'Save organisation'}</Text>
+          </TouchableOpacity>
         )}
       </View>
 
-      {/* Branch */}
+      {/* Branch profile (US12) */}
       <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Branch</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Branch profile</Text>
 
-          {isManager && !editingBranch && (
-            <TouchableOpacity onPress={() => setEditingBranch(true)}>
-              <Text style={styles.link}>Edit</Text>
+          {isManager && (
+            <TouchableOpacity
+              onPress={() => setEditingBranch((v) => !v)}
+              style={styles.editBtn}
+              disabled={saving}
+            >
+              <Text style={styles.editText}>{editingBranch ? 'Cancel' : 'Edit'}</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {!editingBranch ? (
-          <>
-            <View style={styles.row}>
-              <Text style={styles.label}>Name</Text>
-              <Text style={styles.value}>{displayBranchName}</Text>
-            </View>
-
-            <View style={styles.row}>
-              <Text style={styles.label}>Location</Text>
-              <Text style={styles.value}>
-                {displayBranchLocation ? displayBranchLocation : 'Not set'}
-              </Text>
-            </View>
-          </>
-        ) : (
-          <>
-            <Text style={styles.inputLabel}>Branch Name</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Branch name</Text>
+          {editingBranch ? (
             <TextInput
-              value={branchNameInput}
-              onChangeText={setBranchNameInput}
               style={styles.input}
+              value={branchNameDraft}
+              onChangeText={setBranchNameDraft}
               placeholder="Branch name"
             />
+          ) : (
+            <Text style={styles.value}>{branch?.branch_name ?? user.branch_name ?? 'Not set'}</Text>
+          )}
+        </View>
 
-            <Text style={styles.inputLabel}>Branch Location</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Location</Text>
+          {editingBranch ? (
             <TextInput
-              value={branchLocationInput}
-              onChangeText={setBranchLocationInput}
               style={styles.input}
+              value={branchLocationDraft}
+              onChangeText={setBranchLocationDraft}
               placeholder="Branch location"
             />
+          ) : (
+            <Text style={styles.value}>{branch?.branch_location ?? 'Not set'}</Text>
+          )}
+        </View>
 
-            <View style={styles.actions}>
-              <TouchableOpacity
-                style={[styles.button, styles.secondaryButton]}
-                onPress={() => setEditingBranch(false)}
-                disabled={savingBranch}
-              >
-                <Text style={styles.secondaryButtonText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.button, styles.primaryButton, savingBranch && styles.disabled]}
-                onPress={handleSaveBranch}
-                disabled={savingBranch}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {savingBranch ? 'Saving…' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </>
+        {editingBranch && (
+          <TouchableOpacity
+            onPress={handleSaveBranch}
+            style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+            disabled={saving}
+          >
+            <Text style={styles.saveText}>{saving ? 'Saving...' : 'Save branch'}</Text>
+          </TouchableOpacity>
         )}
       </View>
     </ScrollView>
@@ -263,7 +242,8 @@ export const ProfileView: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   content: { padding: 16, paddingBottom: 32 },
-  title: { fontSize: 24, fontWeight: '800', color: '#333', marginBottom: 12 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
+  title: { fontSize: 24, fontWeight: '700', color: '#333', marginBottom: 12 },
 
   card: {
     backgroundColor: '#fff',
@@ -271,22 +251,18 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e8e8e8',
+    borderColor: '#eaeaea',
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: '#333', marginBottom: 12 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 10 },
 
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  label: { fontSize: 13, color: '#666' },
-  value: { fontSize: 13, color: '#333', fontWeight: '600', marginLeft: 10, flexShrink: 1, textAlign: 'right' },
-
-  link: { color: '#2196F3', fontWeight: '800' },
-
-  inputLabel: { fontSize: 12, color: '#666', marginBottom: 6, marginTop: 6 },
+  row: { marginBottom: 10 },
+  label: { fontSize: 12, color: '#777', marginBottom: 4 },
+  value: { fontSize: 14, color: '#333' },
   input: {
     backgroundColor: '#fafafa',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#ddd',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -294,15 +270,29 @@ const styles = StyleSheet.create({
     color: '#333',
   },
 
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 },
-  button: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, marginLeft: 8 },
-  primaryButton: { backgroundColor: '#4CAF50' },
-  primaryButtonText: { color: '#fff', fontWeight: '800' },
-  secondaryButton: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd' },
-  secondaryButtonText: { color: '#333', fontWeight: '700' },
-  disabled: { opacity: 0.7 },
+  editBtn: { paddingHorizontal: 10, paddingVertical: 6 },
+  editText: { fontSize: 13, fontWeight: '700', color: '#2196F3' },
 
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  muted: { marginTop: 10, color: '#777' },
-  errorText: { color: '#f44336', marginBottom: 10, fontWeight: '700' },
+  saveBtn: {
+    marginTop: 6,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  saveBtnDisabled: { backgroundColor: '#cfcfcf' },
+  saveText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+
+  errorBox: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#f3b7b7',
+    marginBottom: 12,
+  },
+  errorText: { color: '#d32f2f', fontSize: 13 },
+  helperText: { marginTop: 8, color: '#666' },
+  retryBtn: { marginTop: 8, alignSelf: 'flex-start' },
+  retryText: { color: '#2196F3', fontWeight: '700' },
 });
