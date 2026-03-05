@@ -18,12 +18,14 @@ import {
 } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { authService } from '@/services/authService';
+import { useRouter } from 'expo-router';
 
 export function LoginScreen() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async () => {
     if (!email.trim()) {
@@ -108,6 +110,13 @@ export function LoginScreen() {
             )}
           </TouchableOpacity>
         </View>
+        {/* Registration link */}
+        <View style={styles.registerRow}>
+          <Text style={styles.registerText}>New to WasteNot? </Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/register')}>
+            <Text style={styles.registerLink}>Register your organisation</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -184,4 +193,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  registerRow: {
+  flexDirection: 'row',
+  justifyContent: 'center',
+  marginTop: 24,
+},
+registerText: {
+  color: '#666',
+  fontSize: 14,
+},
+registerLink: {
+  color: '#4CAF50',
+  fontSize: 14,
+  fontWeight: '700',
+},
 });

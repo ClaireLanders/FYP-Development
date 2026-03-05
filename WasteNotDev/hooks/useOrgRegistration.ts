@@ -1,38 +1,29 @@
-// Custom hook for organisation registration (US11 & US12).
-// Manages form submission state and error handling.
-// Returns a register function and loading/error states.
-// React useState: (React Native, 2025)
-// React useCallback: (React Native, 2025)
-
+// Hook for organisation registration (US11 & US12)
 import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { orgRegistrationService } from '@/services/orgRegistrationService';
-import type { OrgRegistrationRequest, OrgRegistrationResponse } from '@/services/types';
+import type { OrgRegistrationRequest } from '@/services/types';
 
-export const useOrgRegistration = () => {
+export function useOrgRegistration() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const registerOrg = useCallback(async (data: OrgRegistrationRequest): Promise<OrgRegistrationResponse | null> => {
+  const registerOrg = useCallback(async (
+    data: OrgRegistrationRequest,
+    imageUri: string | null = null
+  ) => {
     try {
       setLoading(true);
-      setError(null);
-      const result = await orgRegistrationService.registerOrg(data);
-      Alert.alert('Success', result.message);
+      const result = await orgRegistrationService.registerOrg(data, imageUri);
+      Alert.alert('Success', 'Organisation registered successfully');
       return result;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || 'Failed to register organisation';
-      setError(errorMessage);
-      Alert.alert('Error', errorMessage);
+      const message = err.response?.data?.detail || 'Registration failed';
+      Alert.alert('Error', message);
       return null;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  return {
-    loading,
-    error,
-    registerOrg,
-  };
-};
+  return { loading, registerOrg };
+}

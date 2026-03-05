@@ -1747,81 +1747,73 @@ def remove_user_from_branch(user_branch_id: str, conn=Depends(get_conn)):
 # Creates a new organisation, first branch, manager account, and links them together
 # Password is hashed with sha256 before storing (GeeksforGeeks, 2026)
 @app.post("/register-org", response_model=OrgRegistrationResponse)
-def register_organisation(payload: OrgRegistrationRequest, conn=Depends(get_conn)):
-    # Validating org_type
-    if payload.org_type not in ('s', 'c'):
-        raise HTTPException(400, "Organisation type must be 's' (store) or 'c' (charity)")
+async def register_organisation(
+    org_type: str = Form(...),
+    org_name: str = Form(...),
+    org_email: str = Form(...),
+    branch_name: str = Form(...),
+    branch_location: str = Form(...),
+    manager_email: str = Form(...),
+    manager_password: str = Form(...),
+    org_image: Optional[UploadFile] = File(default=None),
+    conn=Depends(get_conn)
+):
+    if org_type not in ('s', 'c'):
+        raise HTTPException(400, "Organisation type must be 's' or 'c'")
 
-    # Hashing the password before storing
-    password_hash = hashlib.sha256(payload.manager_password.encode()).hexdigest()
+    password_hash = hashlib.sha256(manager_password.encode()).hexdigest()
+
+    # Handling optional image upload (same pattern as products)
+    image_path = None
+    if org_image and org_image.filename:
+        ext = os.path.splitext(org_image.filename)[1]
+        filename = f"{uuid.uuid4()}{ext}"
+        filepath = os.path.join("uploads", filename)
+        contents = await org_image.read()
+        with open(filepath, "wb") as f:
+            f.write(contents)
+        image_path = f"/uploads/{filename}"
 
     with conn:
         with conn.cursor() as cur:
-            # Checking if manager email is already in use
-            cur.execute(
-                "SELECT user_id FROM app_user WHERE user_email = %s",
-                (payload.manager_email,)
-            )
+            # existing validation checks stay exactly the same
+            cur.execute("SELECT user_id FROM app_user WHERE user_email = %s", (manager_email,))
             if cur.fetchone():
                 raise HTTPException(400, "A user with this email already exists")
 
-            # Checking if org name is already in use
-            cur.execute(
-                "SELECT org_id FROM organisation WHERE org_name = %s",
-                (payload.org_name,)
-            )
+            cur.execute("SELECT org_id FROM organisation WHERE org_name = %s", (org_name,))
             if cur.fetchone():
                 raise HTTPException(400, "An organisation with this name already exists")
 
-            # Checking if org email is already in use
-            cur.execute(
-                "SELECT org_id FROM organisation WHERE org_email = %s",
-                (payload.org_email,)
-            )
+            cur.execute("SELECT org_id FROM organisation WHERE org_email = %s", (org_email,))
             if cur.fetchone():
                 raise HTTPException(400, "An organisation with this email already exists")
 
-            # Creating the organisation
             cur.execute(
                 """
-                INSERT INTO organisation (org_type, org_name, org_email)
-                VALUES (%s, %s, %s)
+                INSERT INTO organisation (org_type, org_name, org_email, org_image)
+                VALUES (%s, %s, %s, %s)
                 RETURNING org_id
                 """,
-                (payload.org_type, payload.org_name, payload.org_email)
+                (org_type, org_name, org_email, image_path)
             )
             org_id = cur.fetchone()[0]
 
-            # Creating the first branch
+            # rest of your existing inserts stay exactly the same
             cur.execute(
-                """
-                INSERT INTO branch (org_id, branch_name, branch_location)
-                VALUES (%s, %s, %s)
-                RETURNING branch_id
-                """,
-                (org_id, payload.branch_name, payload.branch_location)
+                "INSERT INTO branch (org_id, branch_name, branch_location) VALUES (%s, %s, %s) RETURNING branch_id",
+                (org_id, branch_name, branch_location)
             )
             branch_id = cur.fetchone()[0]
 
-            # Creating the manager user account
-            # user_type is set automatically to match org_type
             cur.execute(
-                """
-                INSERT INTO app_user (user_email, user_type, password, org_id, role)
-                VALUES (%s, %s, %s, %s, 'manager')
-                RETURNING user_id
-                """,
-                (payload.manager_email, payload.org_type, password_hash, org_id)
+                "INSERT INTO app_user (user_email, user_type, password, org_id, role) VALUES (%s, %s, %s, %s, 'manager') RETURNING user_id",
+                (manager_email, org_type, password_hash, org_id)
             )
             user_id = cur.fetchone()[0]
 
-            # Step 4: Link the user to the org and branch
             cur.execute(
-                """
-                INSERT INTO user_branch (user_id, org_id, branch_id)
-                VALUES (%s, %s, %s)
-                RETURNING user_branch_id
-                """,
+                "INSERT INTO user_branch (user_id, org_id, branch_id) VALUES (%s, %s, %s) RETURNING user_branch_id",
                 (user_id, org_id, branch_id)
             )
             user_branch_id = cur.fetchone()[0]
@@ -1831,7 +1823,7 @@ def register_organisation(payload: OrgRegistrationRequest, conn=Depends(get_conn
         branch_id=str(branch_id),
         user_id=str(user_id),
         user_branch_id=str(user_branch_id),
-        message=f"Organisation '{payload.org_name}' registered successfully"
+        message="Organisation registered successfully"
     )
 
 # User Story 13: Product Management

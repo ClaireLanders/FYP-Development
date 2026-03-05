@@ -13,12 +13,16 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/context/AuthContext';
 import { LoginScreen } from '@/components/Auth/LoginScreen';
 import { NoBranchScreen } from '@/components/Auth/NoBranchScreen';
-
+import { useSegments } from 'expo-router';
 import { AppHeader } from '@/components/Navigation/AppHeader';
+import {OrgRegistrationForm} from "@/components/Registration/OrgRegistrationForm";
+
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { user, loading, logout } = useAuth();
+  const segments = useSegments();
+  const isOnRegister = segments.includes('register');
 
   const handleLogout = async () => {
     await logout();
@@ -31,6 +35,9 @@ export default function TabLayout() {
 
   // If not logged in, show the login screen
   if (!user) {
+      if (isOnRegister) {
+          return <OrgRegistrationForm />;
+  }
     return <LoginScreen />;
   }
 

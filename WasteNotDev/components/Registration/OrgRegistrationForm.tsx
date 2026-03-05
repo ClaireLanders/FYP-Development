@@ -15,8 +15,12 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useOrgRegistration } from '@/hooks/useOrgRegistration';
+import {useRouter} from "expo-router";
+
 
 export function OrgRegistrationForm() {
   const { loading, registerOrg } = useOrgRegistration();
@@ -28,9 +32,21 @@ export function OrgRegistrationForm() {
   const [branchLocation, setBranchLocation] = useState('');
   const [managerEmail, setManagerEmail] = useState('');
   const [managerPassword, setManagerPassword] = useState('');
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const router = useRouter()
 
-  const handleSubmit = async () => {
-    // Validation
+  const pickImage = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    quality: 0.8,
+  });
+  if (!result.canceled) {
+    setImageUri(result.assets[0].uri);
+  }
+};
+
+const handleSubmit = async () => {
     if (!orgName.trim()) {
       alert('Please enter an organisation name');
       return;
@@ -68,17 +84,18 @@ export function OrgRegistrationForm() {
       branch_location: branchLocation.trim(),
       manager_email: managerEmail.trim(),
       manager_password: managerPassword,
-    });
+    }, imageUri);
 
-    // Clear form on success
     if (result) {
-      setOrgName('');
-      setOrgEmail('');
-      setBranchName('');
-      setBranchLocation('');
-      setManagerEmail('');
-      setManagerPassword('');
-    }
+  setOrgName('');
+  setOrgEmail('');
+  setBranchName('');
+  setBranchLocation('');
+  setManagerEmail('');
+  setManagerPassword('');
+  setImageUri(null);
+  router.replace('/(tabs)');
+}
   };
 
   return (
@@ -119,6 +136,17 @@ export function OrgRegistrationForm() {
           {/* Organisation Details */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Organisation Details</Text>
+            {/* Optional org logo */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Organisation Logo (optional)</Text>
+              <TouchableOpacity onPress={pickImage} style={styles.imagePicker} disabled={loading}>
+                {imageUri ? (
+                  <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+                ) : (
+                  <Text style={styles.imagePickerText}>Tap to add logo</Text>
+                )}
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.label}>Organisation Name</Text>
             <TextInput
@@ -306,4 +334,23 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1
   },
+  imagePicker: {
+  height: 120,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: '#ddd',
+  borderStyle: 'dashed',
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: '#fafafa',
+},
+imagePreview: {
+  width: '100%',
+  height: '100%',
+  borderRadius: 12,
+},
+imagePickerText: {
+  color: '#999',
+  fontSize: 14,
+},
 });

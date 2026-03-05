@@ -89,7 +89,9 @@ const styles = StyleSheet.create({
     },
 
     messagesContainer: {
-        maxHeight: 300, // keeping it contained, so it doesn't take over the page !
+        flex: 1,
+        minHeight: 100,
+        maxHeight: 400,
         marginBottom: 12
     },
     messageContainer: {
@@ -113,7 +115,8 @@ const styles = StyleSheet.create({
         padding: 12,
         borderRadius: 8,
         alignSelf: 'flex-start',
-        maxWidth: '90%'
+        maxWidth: '95%',
+        flexShrink: 1,
     },
     answerText: {
         fontSize: 14,

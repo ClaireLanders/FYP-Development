@@ -1,7 +1,5 @@
-// Tab screen entry point for Profile (US12).
-// Shows org + branch profile details and user info.
-
-import React from 'react';
+// Profile screen (US11 & US12)
+// Displays logged-in user details and provides logout
 import { ProfileView } from '@/components/Profile/ProfileView';
 
 export default function ProfileScreen() {
