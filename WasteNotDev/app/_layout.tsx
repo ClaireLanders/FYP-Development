@@ -6,21 +6,25 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Drawer } from 'expo-router/drawer';
 import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuth, AuthProvider } from '@/context/AuthContext';
-
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { useRouter } from 'expo-router';
+
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth, AuthProvider } from '@/context/AuthContext';
 
 function AppDrawerContent(props: any) {
   const router = useRouter();
   const { user } = useAuth();
 
   const isStore = user?.user_type === 's';
+  const isCharity = user?.user_type === 'c';
   const isManager = user?.role === 'manager';
 
-  // Admin/setup screens in drawer (store managers only)
-  const showAdmin = isStore && isManager;
+  const showAnalytics = isStore && isManager;
+  const showProducts = isStore && isManager;
+  const showUsers = isManager;
+
+  const homeRoute = isCharity ? '/(tabs)/browse' : '/(tabs)';
 
   return (
     <DrawerContentScrollView {...props}>
@@ -29,35 +33,39 @@ function AppDrawerContent(props: any) {
         label="Home"
         onPress={() => {
           props.navigation.closeDrawer();
-          router.replace('/(tabs)');
+          router.replace(homeRoute);
         }}
       />
 
       {/* Admin/setup items */}
-      {showAdmin && (
-        <>
-          <DrawerItem
-            label="Analytics"
-            onPress={() => {
-              props.navigation.closeDrawer();
-              router.push('/(tabs)/analytics');
-            }}
-          />
-          <DrawerItem
-            label="Products"
-            onPress={() => {
-              props.navigation.closeDrawer();
-              router.push('/(tabs)/products');
-            }}
-          />
-          <DrawerItem
-            label="Users"
-            onPress={() => {
-              props.navigation.closeDrawer();
-              router.push('/(tabs)/users');
-            }}
-          />
-        </>
+      {showAnalytics && (
+        <DrawerItem
+          label="Analytics"
+          onPress={() => {
+            props.navigation.closeDrawer();
+            router.push('/(tabs)/analytics');
+          }}
+        />
+      )}
+
+      {showProducts && (
+        <DrawerItem
+          label="Products"
+          onPress={() => {
+            props.navigation.closeDrawer();
+            router.push('/(tabs)/products');
+          }}
+        />
+      )}
+
+      {showUsers && (
+        <DrawerItem
+          label="Users"
+          onPress={() => {
+            props.navigation.closeDrawer();
+            router.push('/(tabs)/users');
+          }}
+        />
       )}
     </DrawerContentScrollView>
   );

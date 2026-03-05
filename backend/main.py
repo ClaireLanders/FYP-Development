@@ -916,6 +916,8 @@ def approve_claim(payload: ApproveClaimRequest, conn=Depends(get_conn)):
 
 # Get QR code
 # Fetches the QR code for an approved claim.
+# Get QR code + pickup details for an approved claim
+# Allows access for any charity user in the same org + branch as the claim owner
 # QR code image is generated via generate_qr_code() utility (ProgrammingKnowledge, 2025)
 @app.get("/pickup/qr/{claim_id}")
 def get_pickup_qr(
@@ -924,12 +926,15 @@ def get_pickup_qr(
         conn=Depends(get_conn)
 ):
     with conn, conn.cursor() as cur:
-        # verifying claim exists and belongs to this charity branch
+        # verifying claim exists, is approved, and belongs to this charity branch
         cur.execute(
             """
-            SELECT claim_id, approved
+            SELECT c.claim_id, c.approved
             FROM claim
-            WHERE claim_id = %s AND user_branch_id = %s
+            JOIN user_branch claim_ub ON claim.user_branch_id = c.user_branch_id
+            JOIN user_branhc requester_ub ON requester_ub.user_branch_id = %s
+            WHERE claim_id = %s 
+            AND claim_ub.branch_id = requester_ub.branch_id
             """,
             (claim_id, user_branch_id)
         )
@@ -1157,10 +1162,7 @@ def verify_pickup(payload: VerifyPickupRequest, conn=Depends(get_conn)):
             )
             scanner_branch = cur.fetchone()
 
-            print(f"DEBUG listing_user_branch_id: {listing_user_branch_id}")
-            print(f"DEBUG payload.user_branch_id: {payload.user_branch_id}")
-            print(f"DEBUG listing_branch: {listing_branch}")
-            print(f"DEBUG scanner_branch: {scanner_branch}")
+
 
             if not listing_branch or not scanner_branch or str(listing_branch[0]) != str(scanner_branch[0]):
                 raise HTTPException(
