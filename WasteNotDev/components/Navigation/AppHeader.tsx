@@ -1,46 +1,34 @@
-// Persistent app header shown across tabs
-// Displays menu button, logged-in user details, and logout action
-// Keeps navigation simple while moving admin/setup screens into the drawer
+// Persistent app header shown across all tabs
+// Shows logged-in user + org, and provides hamburger + logout (US14)
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { DrawerActions, useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
-export const AppHeader = () => {
-  const navigation = useNavigation();
+export const AppHeader: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { user, logout } = useAuth();
 
-  const handleMenuPress = () => {
-    navigation.dispatch(DrawerActions.openDrawer());
-  };
+  const name = user?.user_email ?? ''; // your field name
+  const org = user?.org_name ?? '';
 
   const handleLogout = async () => {
     await logout();
   };
 
-  const displayName = (() => {
-    // Using email prefix as a simple display name until a dedicated name field is added
-    const email = user?.user_email ?? '';
-    if (email.includes('@')) return email.split('@')[0];
-    return email || 'User';
-  })();
-
-  const organisationName =
-    user?.org_name || (user?.user_type === 's' ? 'Store' : 'Charity');
-
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
-        <Text style={styles.menuText}>☰</Text>
+      <TouchableOpacity onPress={() => navigation.openDrawer()} style={styles.left}>
+        <Text style={styles.hamburger}>☰</Text>
       </TouchableOpacity>
 
-      <View style={styles.userInfo}>
-        <Text style={styles.userName}>{displayName}</Text>
-        <Text style={styles.orgName}>{organisationName}</Text>
+      <View style={styles.center}>
+        <Text style={styles.nameText}>{name}</Text>
+        <Text style={styles.orgText}>{org}</Text>
       </View>
 
-      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+      <TouchableOpacity onPress={handleLogout} style={styles.right}>
         <Text style={styles.logoutText}>Log Out</Text>
       </TouchableOpacity>
     </View>
@@ -49,44 +37,43 @@ export const AppHeader = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    paddingTop: 56,
     paddingHorizontal: 16,
-    paddingTop: 50,
     paddingBottom: 12,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
     flexDirection: 'row',
     alignItems: 'center',
   },
-  menuButton: {
-    paddingRight: 12,
-    paddingVertical: 4,
+  left: {
+    width: 48,
+    alignItems: 'flex-start',
   },
-  menuText: {
-    fontSize: 24,
-    color: '#333',
-    fontWeight: 'bold',
-  },
-  userInfo: {
+  center: {
     flex: 1,
   },
-  userName: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  right: {
+    width: 80,
+    alignItems: 'flex-end',
+  },
+  hamburger: {
+    fontSize: 22,
     color: '#333',
   },
-  orgName: {
-    fontSize: 13,
+  nameText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#333',
+  },
+  orgText: {
+    fontSize: 12,
     color: '#666',
     marginTop: 2,
   },
-  logoutButton: {
-    paddingLeft: 12,
-    paddingVertical: 4,
-  },
   logoutText: {
     color: '#f44336',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
 });
