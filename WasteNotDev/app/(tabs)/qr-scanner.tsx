@@ -1,15 +1,18 @@
 // QR Code Verification for Pickups
-import {useState} from 'react';
-import { View, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, StyleSheet, Text } from 'react-native';
 import { QRCodeScanner } from '../../components/Pickup/QRCodeScanner';
-import { VerificationResult} from '../../components/Pickup/VerificationResult';
-import {VerifyPickupResponse} from '../../services/pickupService';
-
-
-const USER_BRANCH_ID = '0ca58dd2-df98-42ee-b0a4-f6b43c00a3d8'; // Tesco Express
+import { VerificationResult } from '../../components/Pickup/VerificationResult';
+import { VerifyPickupResponse } from '../../services/pickupService';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ScannerScreen() {
   const [verificationResult, setVerificationResult] = useState<VerifyPickupResponse | null>(null);
+  const { user } = useAuth();
+
+  const USER_BRANCH_ID = user?.user_branch_id ?? '';
+  const BRANCH_NAME = user?.branch_name ?? '';
+  const ORG_NAME = user?.org_name ?? '';
 
   const handleVerified = (result: VerifyPickupResponse) => {
     setVerificationResult(result);
@@ -19,17 +22,30 @@ export default function ScannerScreen() {
     setVerificationResult(null);
   };
 
-  if (verificationResult){
+  if (!USER_BRANCH_ID) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.infoText}>No branch assigned. Please contact your manager.</Text>
+      </View>
+    );
+  }
+
+  if (verificationResult) {
+    return (
+      <View style={styles.container}>
+        <VerificationResult result={verificationResult} onDone={handleDone} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <VerificationResult result={verificationResult} onDone={handleDone} />
-    </View>
-  );
-}
+      <View style={styles.branchBanner}>
+        <Text style={styles.branchBannerText}>
+          Logged in as: {ORG_NAME} - {BRANCH_NAME}
+        </Text>
+      </View>
 
-
-return (
-    <View style={styles.container}>
       <QRCodeScanner
         userBranchId={USER_BRANCH_ID}
         onVerified={handleVerified}
@@ -43,5 +59,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#000',
+  },
+  infoText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  branchBanner: {
+    position: 'absolute',
+    top: 50,
+    left: 16,
+    right: 16,
+    zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 12,
+    borderRadius: 10,
+  },
+  branchBannerText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

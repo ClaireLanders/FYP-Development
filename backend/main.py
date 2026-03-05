@@ -1133,10 +1133,27 @@ def verify_pickup(payload: VerifyPickupRequest, conn=Depends(get_conn)):
             if not items_rows:
                 raise HTTPException(404, "No items found for this claim")
 
-            # Verifying store worker's branch matches
-            listing_user_branch_id = items_rows[0][5] # gets the 5th position from the select statement (l.user_branch_id)
+            # Verifying store worker's branch matches by comparing branch_id
+            listing_user_branch_id = items_rows[0][5]
 
-            if str(listing_user_branch_id) != payload.user_branch_id:
+            cur.execute(
+                "SELECT branch_id FROM user_branch WHERE user_branch_id = %s",
+                (str(listing_user_branch_id),)
+            )
+            listing_branch = cur.fetchone()
+
+            cur.execute(
+                "SELECT branch_id FROM user_branch WHERE user_branch_id = %s",
+                (payload.user_branch_id,)
+            )
+            scanner_branch = cur.fetchone()
+
+            print(f"DEBUG listing_user_branch_id: {listing_user_branch_id}")
+            print(f"DEBUG payload.user_branch_id: {payload.user_branch_id}")
+            print(f"DEBUG listing_branch: {listing_branch}")
+            print(f"DEBUG scanner_branch: {scanner_branch}")
+
+            if not listing_branch or not scanner_branch or str(listing_branch[0]) != str(scanner_branch[0]):
                 raise HTTPException(
                     403,
                     "This pickup is for a different branch"
