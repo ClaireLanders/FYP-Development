@@ -308,6 +308,8 @@ class OrgRegistrationResponse(BaseModel):
     user_branch_id: str
     message: str
 
+
+
 # User Story 13: Product Management
 class ProductOutput(BaseModel):
     product_id: str
@@ -916,27 +918,27 @@ def approve_claim(payload: ApproveClaimRequest, conn=Depends(get_conn)):
 
 # Get QR code
 # Fetches the QR code for an approved claim.
-# Get QR code + pickup details for an approved claim
 # Allows access for any charity user in the same org + branch as the claim owner
 # QR code image is generated via generate_qr_code() utility (ProgrammingKnowledge, 2025)
 @app.get("/pickup/qr/{claim_id}")
 def get_pickup_qr(
         claim_id: str,
-        user_branch_id: str = Query(..., description="User branch ID of charity that made the claim"),
+        user_branch_id: str = Query(..., description="User branch ID of charity requesting the QR"),
         conn=Depends(get_conn)
 ):
     with conn, conn.cursor() as cur:
-        # verifying claim exists, is approved, and belongs to this charity branch
+        # Check claim exists, is approved, and requesting user is in the same branch + org as the claim
         cur.execute(
             """
             SELECT c.claim_id, c.approved
-            FROM claim
-            JOIN user_branch claim_ub ON claim.user_branch_id = c.user_branch_id
-            JOIN user_branhc requester_ub ON requester_ub.user_branch_id = %s
-            WHERE claim_id = %s 
+            FROM claim c
+            JOIN user_branch claim_ub ON claim_ub.user_branch_id = c.user_branch_id
+            JOIN user_branch requester_ub ON requester_ub.user_branch_id = %s
+            WHERE c.claim_id = %s
             AND claim_ub.branch_id = requester_ub.branch_id
+            AND claim_ub.org_id = requester_ub.org_id
             """,
-            (claim_id, user_branch_id)
+            (user_branch_id, claim_id)
         )
 
         claim = cur.fetchone()
@@ -946,7 +948,7 @@ def get_pickup_qr(
         if not claim[1]:
             raise HTTPException(400, "Claim not approved yet")
 
-        # fetching pickup/qr details
+        # Fetch pickup record
         cur.execute(
             """
             SELECT pickup_id, qr_code, complete, created_at, completed_at
@@ -962,10 +964,9 @@ def get_pickup_qr(
 
         pickup_id, qr_code, complete, created_at, completed_at = pickup
 
-        # generating qr image from stored qr code value
         qr_image = generate_qr_code(qr_code)
 
-        # fetching claimed items and store details
+        # Fetch items and store info
         cur.execute(
             """
             SELECT
@@ -988,26 +989,17 @@ def get_pickup_qr(
         )
 
         items_rows = cur.fetchall()
-
-        items = []
         store_info = {}
+        items = []
 
-        # extracting store info from first row and building items list
         if items_rows:
             store_info = {
                 "org_name": items_rows[0][2],
                 "branch_name": items_rows[0][3],
                 "branch_location": items_rows[0][4]
             }
-            items = [
-                {
-                    "product_name": row[0],
-                    "quantity": int(row[1])
-                }
-                for row in items_rows
-            ]
+            items = [{"product_name": row[0], "quantity": int(row[1])} for row in items_rows]
 
-        # response
         return {
             "pickup_id": str(pickup_id),
             "claim_id": str(claim_id),

@@ -120,6 +120,7 @@ export default function TabLayout() {
         <Tabs.Screen name="users" options={{ title: 'Users', href: null }} />
 
         {/* Hidden routes (programmatic navigation only) */}
+         <Tabs.Screen name="profile" options={{ title: 'Profile', href: null }} />
         <Tabs.Screen name="pickup-qr" options={{ title: 'QR Code', href: null }} />
         <Tabs.Screen name="claim-review" options={{ title: 'Review Claim', href: null }} />
         <Tabs.Screen name="register" options={{ title: 'Register', href: null }} />
