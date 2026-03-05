@@ -430,14 +430,15 @@ def make_listing(payload: Listing, conn=Depends(get_conn)):
 @app.get("/listings", response_model=List[ListingAvailable])
 def list_claimable_listings(conn=Depends(get_conn)):
     with conn, conn.cursor() as cur:
-        #  Fetch listings
         cur.execute("""
-            SELECT l.listing_id, o.org_name, b.branch_name
+            SELECT l.listing_id, o.org_name, b.branch_name, b.branch_location,
+                   o.org_image, b.branch_image
             FROM listing l 
             JOIN user_branch ub ON ub.user_branch_id = l.user_branch_id
             JOIN branch b ON b.branch_id = ub.branch_id
-            JOIN organisation o ON o.org_id = ub.org_id
-            ORDER BY l.listing_id
+            JOIN organisation o ON o.org_id = b.org_id
+            WHERE DATE(l.created_at) = CURRENT_DATE
+            ORDER BY o.org_name, b.branch_name
         """)
         listings = cur.fetchall()
         if not listings:
@@ -445,20 +446,18 @@ def list_claimable_listings(conn=Depends(get_conn)):
 
         listing_ids = [row[0] for row in listings]
 
-        # fetching all line items for these listings, returning the available quantity
         cur.execute("""
             SELECT
             lli.listing_id, lli.listing_line_item_id, lli.product_id, p.product_name,
             lli.quantity AS available_qty
             FROM listing_line_item lli
             JOIN product p ON p.product_id = lli.product_id
-            WHERE lli.listing_id= ANY(%s::uuid[])
-            AND lli.quantity >=1 --only items with quantity available
+            WHERE lli.listing_id = ANY(%s::uuid[])
+            AND lli.quantity >= 1
             ORDER BY p.product_name
         """, (listing_ids,))
         rows = cur.fetchall()
 
-    # grouping items by listing_id
     items_by_listing = {}
     for lid, lli_id, pid, pname, qty in rows:
         items_by_listing.setdefault(lid, []).append(
@@ -466,14 +465,12 @@ def list_claimable_listings(conn=Depends(get_conn)):
                 listing_line_item_id=str(lli_id),
                 product_id=str(pid),
                 product_name=pname,
-                quantity=int(qty),  # this now maps to available_qty in the above SQL
-
+                quantity=int(qty),
             )
         )
-    # response
+
     listing_list: List[ListingAvailable] = []
-    for lid, org_name, bname in listings:
-        # if no items found, returns empty list
+    for lid, org_name, bname, blocation, org_image, branch_image in listings:
         items = items_by_listing.get(lid, [])
         if not items:
             continue
@@ -482,7 +479,10 @@ def list_claimable_listings(conn=Depends(get_conn)):
                 listing_id=str(lid),
                 org_name=org_name,
                 branch_name=bname,
-                items = items
+                branch_location=blocation,
+                org_image=org_image,
+                branch_image=branch_image,
+                items=items
             )
         )
     return listing_list
