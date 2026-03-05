@@ -920,12 +920,11 @@ def approve_claim(payload: ApproveClaimRequest, conn=Depends(get_conn)):
 @app.get("/pickup/qr/{claim_id}")
 def get_pickup_qr(
         claim_id: str,
-        user_branch_id:str = Query(..., description="User branch ID of charity that made the claim"),
+        user_branch_id: str = Query(..., description="User branch ID of charity that made the claim"),
         conn=Depends(get_conn)
 ):
-    # getting the QR code for the specific claim
     with conn, conn.cursor() as cur:
-        # Verifying the claim belongs to this user branch
+        # verifying claim exists and belongs to this charity branch
         cur.execute(
             """
             SELECT claim_id, approved
@@ -938,34 +937,35 @@ def get_pickup_qr(
         claim = cur.fetchone()
         if not claim:
             raise HTTPException(404, "Claim not found")
-        # claim not approved
+
         if not claim[1]:
             raise HTTPException(400, "Claim not approved yet")
 
-        # Getting pickup details
+        # fetching pickup/qr details
         cur.execute(
             """
-            SELECT pickup_id, qr_code, complete, created_at
+            SELECT pickup_id, qr_code, complete, created_at, completed_at
             FROM pickup
             WHERE claim_id = %s
             """,
             (claim_id,)
         )
+
         pickup = cur.fetchone()
         if not pickup:
             raise HTTPException(404, "QR code not generated yet")
 
-        pickup_id, qr_code, complete, created_at = pickup
+        pickup_id, qr_code, complete, created_at, completed_at = pickup
 
-        # Generating QR code image using the utitlity funciton
+        # generating qr image from stored qr code value
         qr_image = generate_qr_code(qr_code)
 
-        # Getting claim and store info
+        # fetching claimed items and store details
         cur.execute(
             """
             SELECT
-            p.product_name,
-            lci.quantity,
+                p.product_name,
+                lci.quantity,
                 o.org_name,
                 b.branch_name,
                 b.branch_location
@@ -987,6 +987,7 @@ def get_pickup_qr(
         items = []
         store_info = {}
 
+        # extracting store info from first row and building items list
         if items_rows:
             store_info = {
                 "org_name": items_rows[0][2],
@@ -1000,6 +1001,8 @@ def get_pickup_qr(
                 }
                 for row in items_rows
             ]
+
+        # response
         return {
             "pickup_id": str(pickup_id),
             "claim_id": str(claim_id),
@@ -1007,17 +1010,20 @@ def get_pickup_qr(
             "qr_code_image": qr_image,
             "complete": complete,
             "created_at": created_at.isoformat() if created_at else None,
+            "completed_at": completed_at.isoformat() if completed_at else None,
             "items": items,
             "store_info": store_info
         }
 
 # Getting all approved claims for a charity user, showing pickups ready for collection.
+# getting the logged in charity's pickups
 @app.get("/pickups/my-pickups", response_model=List[PickupDetail])
 def get_my_pickups(
         branch_id: str = Query(..., description="Branch ID of charity to get pickups for"),
         conn=Depends(get_conn)
 ):
     with conn, conn.cursor() as cur:
+        # fetching approved pickups for this charity branch
         cur.execute("""
             SELECT DISTINCT
                 c.claim_id,
@@ -1029,9 +1035,9 @@ def get_my_pickups(
                 c.approved_at
             FROM claim c
             LEFT JOIN pickup p ON p.claim_id = c.claim_id
-            -- Getting the charity user's branch :
+            -- getting the charity user's branch
             JOIN user_branch ub_charity ON ub_charity.user_branch_id = c.user_branch_id
-            -- Getting store branch details from listing
+            -- getting store branch details from the original listing
             JOIN listing_claim_item lci ON lci.claim_id = c.claim_id
             JOIN listing_line_item lli ON lli.listing_line_item_id = lci.listing_line_item_id
             JOIN listing l ON l.listing_id = lli.listing_id
@@ -1040,7 +1046,11 @@ def get_my_pickups(
             JOIN organisation store_o ON store_o.org_id = ub_store.org_id
             WHERE ub_charity.branch_id = %s
             AND c.approved = TRUE
-            ORDER BY c.approved_at DESC
+            AND (
+                COALESCE(p.complete, FALSE) = TRUE
+                OR DATE(c.approved_at) = CURRENT_DATE
+            )
+            ORDER BY complete ASC, c.approved_at DESC
         """, (branch_id,))
 
         claims = cur.fetchall()
@@ -1050,7 +1060,7 @@ def get_my_pickups(
 
         claim_ids = [row[0] for row in claims]
 
-        # Getting total items for each claim
+        # calculating total quantity of items for each claim
         cur.execute(
             """
             SELECT lci.claim_id, SUM(lci.quantity) as total_qty
@@ -1058,12 +1068,13 @@ def get_my_pickups(
             WHERE lci.claim_id = ANY(%s::uuid[])
             GROUP BY lci.claim_id
             """,
-            (claim_ids,))
+            (claim_ids,)
+        )
 
         totals_rows = cur.fetchall()
         totals_by_claim = {row[0]: int(row[1]) for row in totals_rows}
 
-        # Building response
+        # building response
         result = []
         for claim_id, approved, complete, org_name, branch_name, branch_location, approved_at in claims:
             total_items = totals_by_claim.get(claim_id, 0)
@@ -1080,8 +1091,6 @@ def get_my_pickups(
             ))
 
         return result
-
-
 # Verify a pickup by scanning QR code done by the store worker when a charity volunteer shows QR code
 @app.post("/pickup/verify", response_model=VerifyPickupResponse)
 def verify_pickup(payload: VerifyPickupRequest, conn=Depends(get_conn)):

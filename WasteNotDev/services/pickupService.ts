@@ -7,9 +7,10 @@ export interface PickupQRData {
   pickup_id: string;
   claim_id: string;
   qr_code: string;
-  qr_code_image: string; // base64 data URL
+  qr_code_image: string;
   complete: boolean;
   created_at: string;
+  completed_at?: string | null;
   items: Array<{
     product_name: string;
     quantity: number;

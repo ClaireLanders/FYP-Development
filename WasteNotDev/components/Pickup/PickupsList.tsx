@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-    RefreshControl,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { pickupService} from "@/services/pickupService";
+import { pickupService } from '@/services/pickupService';
 import { useAuth } from '@/context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -19,56 +19,78 @@ interface MyPickup {
   complete: boolean;
   org_name: string;
   branch_name: string;
+  branch_location?: string;
   total_items: number;
+  approved_at?: string | null;
 }
 
 export const MyPickupsList: React.FC = () => {
   const { user } = useAuth();
-  const UserBranchId = user?.user_branch_id ?? '';
-  const BranchId = user?.branch_id ?? '';
+  const userBranchId = user?.user_branch_id ?? '';
+  const branchId = user?.branch_id ?? '';
   const router = useRouter();
+
   const [pickups, setPickups] = useState<MyPickup[]>([]);
   const [loading, setLoading] = useState(true);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      void loadPickups();
+    }, [])
+  );
 
-    useFocusEffect(
-      React.useCallback(() => {
-        loadPickups();
-      }, [])
-    );
-
-  // Loading the pickups for the user
   const loadPickups = async () => {
-    try{
+    try {
       setLoading(true);
-      // the branch id
-      const data = await pickupService.getMyPickups(BranchId);
+      const data = await pickupService.getMyPickups(branchId);
       setPickups(data);
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error loading pickups:', error);
-    }
-    finally {
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleViewQR = (claimId: string) => {
+  const handleViewPickup = (claimId: string) => {
     router.push({
       pathname: '/pickup-qr',
       params: {
-        claimId: claimId,
-        UserBranchId: UserBranchId,
-      }
+        claimId,
+        UserBranchId: userBranchId,
+      },
     });
   };
+
+  const activePickups = pickups.filter((pickup) => !pickup.complete);
+  const completedPickups = pickups.filter((pickup) => pickup.complete);
+
+  if (!branchId) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>My Pickups</Text>
+          <Text style={styles.headerSubtitle}>
+            View active pickups and collection history
+          </Text>
+        </View>
+        <View style={styles.centerContainer}>
+          <Text style={styles.emptyText}>No branch assigned</Text>
+          <Text style={styles.emptySubtext}>
+            Please contact your manager to be assigned to a branch
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   if (loading) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>My Pickups</Text>
-          <Text style={styles.headerSubtitle}>View QR codes for approved claims</Text>
+          <Text style={styles.headerSubtitle}>
+            View active pickups and collection history
+          </Text>
         </View>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#2196F3" />
@@ -77,73 +99,128 @@ export const MyPickupsList: React.FC = () => {
     );
   }
 
-  if (pickups.length === 0) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Pickups</Text>
-          <Text style={styles.headerSubtitle}>View QR codes for approved claims</Text>
+  const renderDate = (dateString?: string | null) => {
+    if (!dateString) return null;
+    return new Date(dateString).toLocaleString();
+  };
+
+  const renderActivePickupCard = (item: MyPickup) => (
+    <TouchableOpacity
+      key={item.claim_id}
+      style={styles.pickupCard}
+      onPress={() => handleViewPickup(item.claim_id)}
+    >
+      <View style={styles.cardHeader}>
+        <View>
+          <Text style={styles.storeName}>{item.org_name}</Text>
+          <Text style={styles.branchName}>{item.branch_name}</Text>
+          {item.approved_at && (
+            <Text style={styles.dateText}>
+              Approved: {renderDate(item.approved_at)}
+            </Text>
+          )}
         </View>
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>No pickups yet</Text>
-          <Text style={styles.emptySubtext}>
-            Approved claims will appear here
-          </Text>
+        <View style={[styles.statusBadge, styles.approvedBadge]}>
+          <Text style={styles.statusText}>APPROVED</Text>
         </View>
       </View>
-    );
-  }
+
+      <View style={styles.cardBody}>
+        <Text style={styles.itemsText}>
+          {item.total_items} {item.total_items === 1 ? 'item' : 'items'}
+        </Text>
+        <Text style={styles.actionText}>View QR Code →</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderCompletedPickupCard = (item: MyPickup) => (
+    <TouchableOpacity
+      key={item.claim_id}
+      style={[styles.pickupCard, styles.historyCard]}
+      onPress={() => handleViewPickup(item.claim_id)}
+    >
+      <View style={styles.cardHeader}>
+        <View>
+          <Text style={styles.storeName}>{item.org_name}</Text>
+          <Text style={styles.branchName}>{item.branch_name}</Text>
+          {item.approved_at && (
+            <Text style={styles.dateText}>
+              Approved: {renderDate(item.approved_at)}
+            </Text>
+          )}
+        </View>
+        <View style={[styles.statusBadge, styles.completedBadge]}>
+          <Text style={styles.statusText}>COLLECTED</Text>
+        </View>
+      </View>
+
+      <View style={styles.cardBody}>
+        <Text style={styles.itemsText}>
+          {item.total_items} {item.total_items === 1 ? 'item' : 'items'}
+        </Text>
+        <Text style={styles.historyText}>View pickup details →</Text>
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Pickups</Text>
-        <Text style={styles.headerSubtitle}>View QR codes for approved claims</Text>
+        <Text style={styles.headerSubtitle}>
+          View active pickups and collection history
+        </Text>
       </View>
 
-      <FlatList<MyPickup>
-        data={pickups}
-        keyExtractor={(item) => item.claim_id}
+      <ScrollView
+        style={styles.content}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={loadPickups} />
         }
-        renderItem={({ item }) => {
-          return (
-            <TouchableOpacity
-              style={styles.pickupCard}
-              onPress={() => handleViewQR(item.claim_id)}
-            >
-              <View style={styles.cardHeader}>
-                <View>
-                  <Text style={styles.storeName}>{item.org_name}</Text>
-                  <Text style={styles.branchName}>{item.branch_name}</Text>
-                </View>
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>
-                    {item.complete ? 'PICKED UP' : 'APPROVED'}
-                  </Text>
-                </View>
-              </View>
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Ready for Collection</Text>
 
-              <View style={styles.cardBody}>
-                <Text style={styles.itemsText}>
-                  {item.total_items} {item.total_items === 1 ? 'item' : 'items'}
-                </Text>
-                <Text style={styles.viewQRText}>View QR Code →</Text>
-              </View>
-            </TouchableOpacity>
-          );
-        }}
-        contentContainerStyle={styles.listContainer}
-      />
+          {activePickups.length === 0 ? (
+            <View style={styles.emptySection}>
+              <Text style={styles.emptySectionText}>No active pickups</Text>
+              <Text style={styles.emptySectionSubtext}>
+                Approved claims from today will appear here
+              </Text>
+            </View>
+          ) : (
+            activePickups.map(renderActivePickupCard)
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Pickup History</Text>
+
+          {completedPickups.length === 0 ? (
+            <View style={styles.emptySection}>
+              <Text style={styles.emptySectionText}>No completed pickups yet</Text>
+              <Text style={styles.emptySectionSubtext}>
+                Completed collections will appear here
+              </Text>
+            </View>
+          ) : (
+            completedPickups.map(renderCompletedPickupCard)
+          )}
+        </View>
+      </ScrollView>
     </View>
   );
 };
-// (ReactNative, 2026)
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  content: {
+    flex: 1,
   },
   header: {
     backgroundColor: '#fff',
@@ -168,6 +245,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+  },
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -179,8 +269,22 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
   },
-  listContainer: {
-    padding: 16,
+  emptySection: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptySectionText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#999',
+    marginBottom: 6,
+  },
+  emptySectionSubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
   },
   pickupCard: {
     backgroundColor: '#fff',
@@ -192,6 +296,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+  },
+  historyCard: {
+    opacity: 0.95,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -208,12 +315,22 @@ const styles = StyleSheet.create({
   branchName: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 4,
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#888',
   },
   statusBadge: {
-    backgroundColor: '#4CAF50',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
+  },
+  approvedBadge: {
+    backgroundColor: '#4CAF50',
+  },
+  completedBadge: {
+    backgroundColor: '#757575',
   },
   statusText: {
     color: '#fff',
@@ -229,9 +346,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  viewQRText: {
+  actionText: {
     fontSize: 14,
     color: '#2196F3',
+    fontWeight: 'bold',
+  },
+  historyText: {
+    fontSize: 14,
+    color: '#757575',
     fontWeight: 'bold',
   },
 });

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   View,
@@ -23,13 +22,13 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   UserBranchId,
   onBack,
 }) => {
-  const { qrData, loading, error, refresh } = usePickupQR(claimId, UserBranchId);
+  const { qrData, loading, error } = usePickupQR(claimId, UserBranchId);
 
   if (loading) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.loadingText}>Loading your QR code...</Text>
+        <Text style={styles.loadingText}>Loading pickup details...</Text>
       </View>
     );
   }
@@ -37,7 +36,6 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   if (error) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorIcon}></Text>
         <Text style={styles.errorMessage}>{error}</Text>
         {error.includes('not approved') && (
           <Text style={styles.errorHint}>
@@ -56,46 +54,53 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   if (!qrData) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorMessage}>No QR code found</Text>
+        <Text style={styles.errorMessage}>No pickup details found</Text>
       </View>
     );
   }
 
   const totalItems = qrData.items.reduce((sum, item) => sum + item.quantity, 0);
 
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return null;
+    return new Date(dateString).toLocaleString();
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Pickup QR Code</Text>
+        <Text style={styles.title}>
+          {qrData.complete ? 'Pickup Details' : 'Pickup QR Code'}
+        </Text>
         <ClaimStatusBadge approved={true} complete={qrData.complete} />
       </View>
 
-      {qrData.complete && (
+      {qrData.complete ? (
         <View style={styles.completedBanner}>
-          <Text style={styles.completedText}>
-            ✓ This order has been picked up
-          </Text>
+          <Text style={styles.completedText}>✓ This pickup has been completed</Text>
+          {qrData.completed_at && (
+            <Text style={styles.completedDateText}>
+              Collected: {formatDate(qrData.completed_at)}
+            </Text>
+          )}
         </View>
-      )}
-
-      {!qrData.complete && (
+      ) : (
         <Text style={styles.instruction}>
           Show this QR code to the store worker when you arrive to pick up your items
         </Text>
       )}
 
-      {/* QR Code */}
-      <View style={styles.qrContainer}>
-        <Image
-          source={{ uri: qrData.qr_code_image }}
-          style={styles.qrImage}
-          resizeMode="contain"
-        />
-        <Text style={styles.qrCodeText}>{qrData.qr_code}</Text>
-      </View>
+      {!qrData.complete && (
+        <View style={styles.qrContainer}>
+          <Image
+            source={{ uri: qrData.qr_code_image }}
+            style={styles.qrImage}
+            resizeMode="contain"
+          />
+          <Text style={styles.qrCodeText}>{qrData.qr_code}</Text>
+        </View>
+      )}
 
-      {/* Pickup Location */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Pickup Location</Text>
         <View style={styles.card}>
@@ -105,7 +110,6 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         </View>
       </View>
 
-      {/* Items */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
           Items ({totalItems} {totalItems === 1 ? 'item' : 'items'})
@@ -116,7 +120,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
               key={index}
               style={[
                 styles.itemRow,
-                index < qrData.items.length - 1 && styles.itemRowBorder
+                index < qrData.items.length - 1 && styles.itemRowBorder,
               ]}
             >
               <Text style={styles.itemName}>{item.product_name}</Text>
@@ -126,31 +130,27 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         </View>
       </View>
 
-      {/* Instructions */}
       {!qrData.complete && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}> Instructions</Text>
+          <Text style={styles.sectionTitle}>Instructions</Text>
           <View style={styles.card}>
-            <Text style={styles.instructionStep}>
-              1. Go to the pickup location listed above
-            </Text>
-            <Text style={styles.instructionStep}>
-              2. Find a store worker
-            </Text>
-            <Text style={styles.instructionStep}>
-              3. Show them this QR code
-            </Text>
-            <Text style={styles.instructionStep}>
-              4. They will scan it and give you your items
-            </Text>
+            <Text style={styles.instructionStep}>1. Go to the pickup location listed above</Text>
+            <Text style={styles.instructionStep}>2. Find a store worker</Text>
+            <Text style={styles.instructionStep}>3. Show them this QR code</Text>
+            <Text style={styles.instructionStep}>4. They will scan it and give you your items</Text>
           </View>
         </View>
       )}
 
+      {onBack && (
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <Text style={styles.backButtonText}>Back to My Pickups</Text>
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 };
-// (ReactNative, 2026)
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -158,6 +158,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
+    paddingBottom: 32,
   },
   centerContainer: {
     flex: 1,
@@ -193,6 +194,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  completedDateText: {
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 6,
   },
   qrContainer: {
     backgroundColor: '#fff',
@@ -279,10 +286,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#666',
-  },
-  errorIcon: {
-    fontSize: 48,
-    marginBottom: 12,
   },
   errorMessage: {
     fontSize: 18,
