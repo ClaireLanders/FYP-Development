@@ -1,17 +1,25 @@
 // Component for browsing and claiming available listings
 // Two-screen flow: store cards list → store detail with claimable items
 // Fetches today's available listings from the backend API
-// Allows charity volunteers to select quantities and submit claims
+// Allows charity volunteers to select quantities and review claims before submitting
 // This is adapted for React Native from my own code in frontend/src/components/Browse.jsx
 
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, View, RefreshControl, Image } from 'react-native';
+import {
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  View,
+  RefreshControl,
+  Image,
+  Alert,
+} from 'react-native';
+import { useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { ClaimableItem } from './ClaimableItem';
 import { useListings } from '../../hooks/useListings';
-import { claimService } from '../../services/claimService';
-import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/context/AuthContext';
 import { API_BASE_URL } from '../../services/api';
 import type { Listing } from '../../services/types';
@@ -20,18 +28,17 @@ export const ListingBrowser = () => {
   const { user } = useAuth();
   const USER_BRANCH_ID = user?.user_branch_id ?? '';
   const { listings, loading, refetch } = useListings();
+  const router = useRouter();
+
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [claimQuantities, setClaimQuantities] = useState<Record<string, number>>({});
-  const [claiming, setClaiming] = useState(false);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      void refetch();
-      setSelectedListing(null);
-    }, [])
-  );
+React.useEffect(() => {
+  void refetch();
+  setSelectedListing(null);
+}, []);
 
-// Group listings by branch, merging all items into one listing per store
+  // Group listings by branch, merging all items into one listing per store
   const storeGroups = useMemo(() => {
     const groups: Record<string, Listing> = {};
     listings.forEach((listing) => {
@@ -39,7 +46,6 @@ export const ListingBrowser = () => {
       if (!groups[key]) {
         groups[key] = { ...listing, items: [...listing.items] };
       } else {
-        // Merge items from additional listings into the existing group
         listing.items.forEach((item) => {
           const existing = groups[key].items.find(
             (i) => i.listing_line_item_id === item.listing_line_item_id
@@ -60,38 +66,32 @@ export const ListingBrowser = () => {
     }));
   };
 
-  const handleClaim = async () => {
+  const handleReviewClaim = () => {
     if (!selectedListing) return;
 
-    const items = Object.entries(claimQuantities)
-      .filter(([_, qty]) => qty > 0)
-      .map(([itemId, quantity]) => ({
-        listing_line_item_id: itemId,
-        quantity,
+    const selectedItems = selectedListing.items
+      .filter((item) => (claimQuantities[item.listing_line_item_id] || 0) > 0)
+      .map((item) => ({
+        listing_line_item_id: item.listing_line_item_id,
+        product_name: item.product_name,
+        quantity: claimQuantities[item.listing_line_item_id],
       }));
 
-    if (items.length === 0) {
+    if (selectedItems.length === 0) {
       Alert.alert('No Items', 'Please select at least one item to claim.');
       return;
     }
 
-    try {
-      setClaiming(true);
-      await claimService.create({
-        user_branch_id: USER_BRANCH_ID,
-        items,
-      });
-
-      Alert.alert('Success', 'Items claimed successfully!');
-      setClaimQuantities({});
-      setSelectedListing(null);
-      refetch();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to claim items. Please try again.');
-      console.error('Error claiming items:', error);
-    } finally {
-      setClaiming(false);
-    }
+    router.push({
+      pathname: '/claim-review',
+      params: {
+        userBranchId: USER_BRANCH_ID,
+        orgName: selectedListing.org_name,
+        branchName: selectedListing.branch_name,
+        branchLocation: selectedListing.branch_location ?? '',
+        selectedItems: JSON.stringify(selectedItems),
+      },
+    });
   };
 
   const totalClaimCount = Object.values(claimQuantities).reduce((sum, qty) => sum + qty, 0);
@@ -167,15 +167,11 @@ export const ListingBrowser = () => {
           </ThemedView>
         </ScrollView>
 
-        {/* Claim button fixed at bottom */}
+        {/* Review button fixed at bottom */}
         {totalClaimCount > 0 && (
-          <TouchableOpacity
-            style={[styles.claimButton, claiming && styles.claimButtonDisabled]}
-            onPress={handleClaim}
-            disabled={claiming}
-          >
+          <TouchableOpacity style={styles.claimButton} onPress={handleReviewClaim}>
             <ThemedText style={styles.claimButtonText}>
-              {claiming ? 'Claiming...' : `Claim ${totalClaimCount} Item${totalClaimCount !== 1 ? 's' : ''}`}
+              Review Claim ({totalClaimCount} Item{totalClaimCount !== 1 ? 's' : ''})
             </ThemedText>
           </TouchableOpacity>
         )}
@@ -200,11 +196,9 @@ export const ListingBrowser = () => {
 
       <ScrollView
         style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refetch} />
-        }
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={refetch} />}
       >
-{storeGroups.map((storeListing) => (
+        {storeGroups.map((storeListing) => (
           <TouchableOpacity
             key={storeListing.listing_id}
             style={styles.storeCard}
@@ -232,7 +226,9 @@ export const ListingBrowser = () => {
               <ThemedText style={styles.storeCardOrg}>{storeListing.org_name}</ThemedText>
               <ThemedText style={styles.storeCardBranch}>{storeListing.branch_name}</ThemedText>
               {storeListing.branch_location && (
-                <ThemedText style={styles.storeCardLocation}>{storeListing.branch_location}</ThemedText>
+                <ThemedText style={styles.storeCardLocation}>
+                  {storeListing.branch_location}
+                </ThemedText>
               )}
               <ThemedText style={styles.storeCardItems}>
                 {storeListing.items.length} item{storeListing.items.length !== 1 ? 's' : ''} available
@@ -389,9 +385,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-  },
-  claimButtonDisabled: {
-    backgroundColor: '#ccc',
   },
   claimButtonText: {
     color: '#fff',

@@ -122,6 +122,14 @@ export default function TabLayout() {
           href: isCharity ? undefined : null,
         }}
       />
+        {/* Claim review (is not a tab, but still routable via router.push) */}
+      <Tabs.Screen
+        name="claim-review"
+        options={{
+          title: 'Review Claim',
+          href: null,
+        }}
+      />
 
       {/* Shared tabs - managers only */}
       <Tabs.Screen
