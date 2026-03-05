@@ -2,16 +2,18 @@
 // Shows login screen if user is not authenticated
 // Conditionally shows tabs based on user_type and role (US14)
 // This is adapted from Expo Router's tab layout pattern (Expo, 2024)
+// Daily workflow stays in tabs, admin/setup moves to drawer
 
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, TouchableOpacity, Text } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/context/AuthContext';
 import { LoginScreen } from '@/components/Auth/LoginScreen';
 import { NoBranchScreen } from '@/components/Auth/NoBranchScreen';
+import { AppHeader } from '@/components/Navigation/AppHeader';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -39,8 +41,6 @@ export default function TabLayout() {
   // Determining which tabs to show based on user_type and role
   const isStore = user.user_type === 's';
   const isCharity = user.user_type === 'c';
-  const isManager = user.role === 'manager';
-
 
   return (
     <Tabs
@@ -48,14 +48,12 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: true,
-        headerRight: () => (
-          <TouchableOpacity onPress={handleLogout} style={{ marginRight: 16 }}>
-            <Text style={{ color: '#f44336' } }>Log Out</Text>
-          </TouchableOpacity>
-        ),
+
+        // Persistent header (profile + hamburger + logout)
+        header: () => <AppHeader onLogout={handleLogout} />,
       }}
     >
-      {/* Store tabs */}
+      {/* Store tabs (daily workflow) */}
       <Tabs.Screen
         name="index"
         options={{
@@ -92,16 +90,8 @@ export default function TabLayout() {
           href: isStore ? undefined : null,
         }}
       />
-      <Tabs.Screen
-        name="products"
-        options={{
-          title: 'Products',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-          href: isStore && isManager ? undefined : null,
-        }}
-      />
 
-      {/* Charity tabs */}
+      {/* Charity tabs (daily workflow) */}
       <Tabs.Screen
         name="browse"
         options={{
@@ -122,48 +112,51 @@ export default function TabLayout() {
           href: isCharity ? undefined : null,
         }}
       />
-        {/* Claim review (is not a tab, but still routable via router.push) */}
-      <Tabs.Screen
-        name="claim-review"
-        options={{
-          title: 'Review Claim',
-          href: null,
-        }}
-      />
 
-      {/* Shared tabs - managers only */}
+      {/* Admin/setup screens - moved to drawer (US14) */}
       <Tabs.Screen
         name="analytics"
         options={{
           title: 'Analytics',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-          href: isStore && isManager ? undefined : null,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="products"
+        options={{
+          title: 'Products',
+          href: null,
         }}
       />
       <Tabs.Screen
         name="users"
         options={{
           title: 'Users',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-          href: isManager ? undefined : null,
-        }}
-      />
-
-      {/* Register tab - hidden when logged in */}
-      <Tabs.Screen
-        name="register"
-        options={{
-          title: 'Register',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
           href: null,
         }}
       />
 
-      {/* Pickup QR - should NOT be a tab (still routable via router.push) */}
+      {/* Register - hidden when logged in */}
+      <Tabs.Screen
+        name="register"
+        options={{
+          title: 'Register',
+          href: null,
+        }}
+      />
+
+      {/* Hidden routes (programmatic navigation only) */}
       <Tabs.Screen
         name="pickup-qr"
         options={{
           title: 'QR Code',
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="claim-review"
+        options={{
+          title: 'Review Claim',
           href: null,
         }}
       />
