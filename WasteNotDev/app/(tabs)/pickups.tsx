@@ -1,4 +1,4 @@
-
+// Pickups screen - shows approved claims ready for collection (US6)
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { MyPickupsList } from '@/components/Pickup/PickupsList';

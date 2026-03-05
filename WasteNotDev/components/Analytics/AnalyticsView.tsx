@@ -324,8 +324,6 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         paddingBottom: Platform.OS === 'ios' ? 100: 0 //this gives extra space for ios versions
     },
-    bottomSpacer: {
-        height: Platform.OS === 'ios' ? 100 : 0
-    },
+
 });
 

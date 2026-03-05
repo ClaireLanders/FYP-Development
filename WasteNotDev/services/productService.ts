@@ -78,8 +78,7 @@ export const productService = {
         type: fileType,
       } as any);
     }
-    console.log('FormData entries:', JSON.stringify(formData));
-    console.log('Sending PATCH to:', `/products/${productId}`);
+
     const response = await api.patch(`/products/${productId}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });

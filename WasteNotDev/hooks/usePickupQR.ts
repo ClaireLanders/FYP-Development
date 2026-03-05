@@ -1,4 +1,4 @@
-
+// Hook for fetching QR code data for an approved pickup (US6)
 
 import { useState, useEffect, useCallback } from 'react';
 import { pickupService, PickupQRData } from '@/services/pickupService';

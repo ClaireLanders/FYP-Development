@@ -1,4 +1,5 @@
 // Manages QR state and logic
+// Hook for managing QR scanner state and verifying pickups (US5 & US6)
 import { useState } from 'react';
 import { pickupService, VerifyPickupResponse } from '../services/pickupService';
 

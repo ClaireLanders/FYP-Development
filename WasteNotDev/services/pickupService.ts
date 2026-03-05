@@ -1,4 +1,5 @@
-
+// Service layer for pickup-related API calls (US5 & US6)
+// Handles QR code retrieval, pickup verification, and fetching a user's pickups
 
 import {api} from './api';
 

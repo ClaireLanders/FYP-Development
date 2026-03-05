@@ -1,4 +1,4 @@
-
+// Card component for displaying a pending claim awaiting store approval (US5)
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { PendingClaimDetail } from '@/services/claimApprovalService';

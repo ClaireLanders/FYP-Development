@@ -1,4 +1,4 @@
-
+// QR code display screen for an approved pickup (US6)
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
