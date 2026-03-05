@@ -8,20 +8,20 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { usePickupQR } from '@/hooks/usePickupQR';
 import { ClaimStatusBadge } from './ClaimStatusBadge';
 
 interface QRCodeDisplayProps {
   claimId: string;
   UserBranchId: string;
-  onBack?: () => void;
 }
 
 export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   claimId,
   UserBranchId,
-  onBack,
 }) => {
+  const router = useRouter();
   const { qrData, loading, error } = usePickupQR(claimId, UserBranchId);
 
   if (loading) {
@@ -42,11 +42,12 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
             Your claim is waiting for store approval
           </Text>
         )}
-        {onBack && (
-          <TouchableOpacity style={styles.button} onPress={onBack}>
-            <Text style={styles.buttonText}>Go Back</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.replace('/(tabs)/pickups')}
+        >
+          <Text style={styles.buttonText}>Back to My Pickups</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -55,6 +56,12 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.errorMessage}>No pickup details found</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.replace('/(tabs)/pickups')}
+        >
+          <Text style={styles.buttonText}>Back to My Pickups</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -142,11 +149,12 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         </View>
       )}
 
-      {onBack && (
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>Back to My Pickups</Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.replace('/(tabs)/pickups')}
+      >
+        <Text style={styles.backButtonText}>Back to My Pickups</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };

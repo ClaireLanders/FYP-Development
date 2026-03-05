@@ -23,9 +23,7 @@ export default function TabLayout() {
 
   // Showing a loading spinner while checking for stored auth
   if (loading) {
-    return (
-        <ActivityIndicator size="large" color="#4CAF50" />
-    );
+    return <ActivityIndicator size="large" color="#4CAF50" />;
   }
 
   // If not logged in, show the login screen
@@ -43,18 +41,20 @@ export default function TabLayout() {
   const isCharity = user.user_type === 'c';
   const isManager = user.role === 'manager';
 
+
   return (
     <Tabs
+      initialRouteName={isCharity ? 'browse' : 'index'}
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: true,
-          headerRight: () => (
+        headerRight: () => (
           <TouchableOpacity onPress={handleLogout} style={{ marginRight: 16 }}>
-            <Text style={{ color: '#f44336', fontSize: 14, fontWeight: '600'}as const }>Log Out</Text>
+            <Text style={{ color: '#f44336' } }>Log Out</Text>
           </TouchableOpacity>
         ),
-      }}>
-
+      }}
+    >
       {/* Store tabs */}
       <Tabs.Screen
         name="index"
@@ -76,7 +76,9 @@ export default function TabLayout() {
         name="approvals"
         options={{
           title: 'Approvals',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />
+          ),
           href: isStore ? undefined : null,
         }}
       />
@@ -84,7 +86,9 @@ export default function TabLayout() {
         name="qr-scanner"
         options={{
           title: 'QR Scanner',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />
+          ),
           href: isStore ? undefined : null,
         }}
       />
@@ -102,7 +106,9 @@ export default function TabLayout() {
         name="browse"
         options={{
           title: 'Browse',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />
+          ),
           href: isCharity ? undefined : null,
         }}
       />
@@ -110,7 +116,9 @@ export default function TabLayout() {
         name="pickups"
         options={{
           title: 'Pickups',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />
+          ),
           href: isCharity ? undefined : null,
         }}
       />
@@ -143,16 +151,14 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Pickup QR - charity only */}
+      {/* Pickup QR - should NOT be a tab (still routable via router.push) */}
       <Tabs.Screen
         name="pickup-qr"
         options={{
           title: 'QR Code',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />,
-          href: isCharity ? undefined : null,
+          href: null,
         }}
       />
     </Tabs>
   );
 }
-
