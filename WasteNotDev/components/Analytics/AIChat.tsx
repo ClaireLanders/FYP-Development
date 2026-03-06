@@ -1,9 +1,5 @@
-// Presentational component for the AI analytics chat interface
-// Renders a scrollable message history and a text input with a send button.
-// Accepts all state and handlers as props from AnalyticsView.
-// React Native ActivityIndicator used to show loading state while awaiting AI response.
-import React from 'react';
-import { View,Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView} from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import type { ChatMessage } from '@/services/types';
 
 interface AIChatProps {
@@ -14,19 +10,25 @@ interface AIChatProps {
     loading: boolean;
 }
 
-export default function AIChat({
-    messages,
-    question,
-    onQuestionChange,
-    onSend,
-    loading
-}: AIChatProps) {
+export default function AIChat({ messages, question, onQuestionChange, onSend, loading }: AIChatProps) {
+    const scrollRef = useRef<ScrollView | null>(null);
+
+    // Auto-scroll to bottom when new messages arrive
+    useEffect(() => {
+        if (messages.length > 0) {
+            setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+        }
+    }, [messages]);
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Ask About Your Data</Text>
 
-            {/* Messages + chat history */}
-            <ScrollView style={styles.messagesContainer}>
+            <ScrollView
+                ref={scrollRef}
+                style={styles.messagesContainer}
+                showsVerticalScrollIndicator={true}
+            >
                 {messages.map((msg, index) => (
                     <View key={index} style={styles.messageContainer}>
                         <View style={styles.questionBubble}>
@@ -39,8 +41,6 @@ export default function AIChat({
                 ))}
             </ScrollView>
 
-            {/* input section */}
-
             <View style={styles.inputContainer}>
                 <TextInput
                     style={styles.input}
@@ -52,10 +52,7 @@ export default function AIChat({
                     editable={!loading}
                 />
                 <TouchableOpacity
-                    style={[
-                        styles.sendButton,
-                        (!question.trim() || loading) && styles.sendButtonDisabled
-                    ]}
+                    style={[styles.sendButton, (!question.trim() || loading) && styles.sendButtonDisabled]}
                     onPress={onSend}
                     disabled={!question.trim() || loading}
                 >
@@ -76,7 +73,8 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         backgroundColor: '#fff',
         borderRadius: 8,
-        padding: 16
+        padding: 16,
+        maxHeight: 500,
     },
     title: {
         fontSize: 18,
@@ -84,17 +82,13 @@ const styles = StyleSheet.create({
         color: '#333',
         marginBottom: 16
     },
-
     messagesContainer: {
-        flex: 1,
-        minHeight: 100,
-        maxHeight: 400,
-        marginBottom: 12
+        maxHeight: 300,
+        marginBottom: 12,
     },
     messageContainer: {
         marginBottom: 16
     },
-
     questionBubble: {
         backgroundColor: '#E3F2FD',
         padding: 12,
@@ -103,10 +97,7 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-end',
         maxWidth: '80%'
     },
-    questionText: {
-        fontSize: 14,
-        color: '#333'
-    },
+    questionText: { fontSize: 14, color: '#333' },
     answerBubble: {
         backgroundColor: '#F5F5F5',
         padding: 12,
@@ -115,11 +106,7 @@ const styles = StyleSheet.create({
         maxWidth: '95%',
         flexShrink: 1,
     },
-    answerText: {
-        fontSize: 14,
-        color: '#333',
-        lineHeight: 20
-    },
+    answerText: { fontSize: 14, color: '#333', lineHeight: 20 },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'flex-end',
@@ -141,15 +128,6 @@ const styles = StyleSheet.create({
         minWidth: 60,
         alignItems: 'center'
     },
-    sendButtonDisabled: {
-        backgroundColor: '#ccc'
-    },
-    sendButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: '600'
-    }
+    sendButtonDisabled: { backgroundColor: '#ccc' },
+    sendButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' }
 });
-
-
-
