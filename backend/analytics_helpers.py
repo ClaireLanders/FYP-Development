@@ -98,8 +98,7 @@ def generate_month_chart(cur, branch_id, ref, start_date, end_date):
 
     # Start from first Monday on or before month start
     current = first_day
-    if current.weekday() != 0:  # Not Monday
-        current = current - timedelta(days=current.weekday())
+
 
     week_num = 1
     while current <= last_day:
