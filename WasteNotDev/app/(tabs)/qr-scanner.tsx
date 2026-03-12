@@ -40,11 +40,6 @@ export default function ScannerScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.branchBanner}>
-        <Text style={styles.branchBannerText}>
-          Logged in as: {ORG_NAME} - {BRANCH_NAME}
-        </Text>
-      </View>
 
       <QRCodeScanner
         userBranchId={USER_BRANCH_ID}
@@ -72,20 +67,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
-  branchBanner: {
-    position: 'absolute',
-    top: 50,
-    left: 16,
-    right: 16,
-    zIndex: 10,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    padding: 12,
-    borderRadius: 10,
-  },
-  branchBannerText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
+
 });
